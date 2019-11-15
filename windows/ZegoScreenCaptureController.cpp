@@ -344,7 +344,9 @@ void ZegoScreenCaptureController::onUiResolutionSelectChanged(QSize resolution)
 
 	// 设置推流编码分辨率，即拉流端看到的画面分辨率。
 	// 直播过程中该分辨率最好不要发生变化，否则可能影响服务器的录制
-	ZEGO::LIVEROOM::SetVideoCaptureResolution(resolution.width(), resolution.height());
+	//ZEGO::LIVEROOM::SetVideoCaptureResolution(resolution.width(), resolution.height());
+
+	ZEGO::LIVEROOM::SetVideoEncodeResolution(resolution.width(), resolution.height());
 }
 
 void ZegoScreenCaptureController::onUiBitrateChanged(int bitrate)
