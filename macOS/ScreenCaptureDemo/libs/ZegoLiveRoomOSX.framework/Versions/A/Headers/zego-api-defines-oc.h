@@ -35,6 +35,9 @@ ZEGO_EXTERN NSString *const kZegoFlvUrlListKey;
 ZEGO_EXTERN NSString *const kZegoDeviceCameraName;
 /** 麦克风设备 */
 ZEGO_EXTERN NSString *const kZegoDeviceMicrophoneName;
+/** 音频设备*/
+ZEGO_EXTERN NSString *const kZegoDeviceAudioName;
+
 /** 混流输出格式，值为 NSNumber，可选 {0, 1} */
 ZEGO_EXTERN NSString *const kMixStreamAudioOutputFormat;
 
@@ -92,12 +95,14 @@ typedef enum {
     CAPTURE_ROTATE_270  = 270
 } CAPTURE_ROTATE;
 
-/** 分层编码 */
+/** 视频编解码器. */
 typedef enum {
-    /** 不支持分层编码 */
+    /** 默认编码, 不支持分层编码 */
     VIDEO_CODEC_DEFAULT = 0,
     /** 分层编码 要达到和VIDEO_CODEC_DEFAULT相同的编码质量，建议码率和VIDEO_CODEC_DEFAULT相比增加20%左右 */
-    VIDEO_CODEC_MULTILAYER = 1
+    VIDEO_CODEC_MULTILAYER = 1,
+    /** VP8编码 */
+    VIDEO_CODEC_VP8 = 2,
 } ZegoVideoCodecAvc;
 
 /** 视频分层类型 */
@@ -344,13 +349,13 @@ typedef enum
 /** 发布直播的模式 */
 enum ZegoAPIPublishFlag
 {
-    /**  连麦模式 */
+    /**  连麦模式，直播流会推到即构服务器，然后转推到CDN，默认连麦者之间从即构服务器拉流，观众从 CDN 拉流 */
     ZEGOAPI_JOIN_PUBLISH    = 0,
     ZEGO_JOIN_PUBLISH       = ZEGOAPI_JOIN_PUBLISH,
-    /**  混流模式 */
+    /**  混流模式，同连麦模式，有混流需求时使用 */
     ZEGOAPI_MIX_STREAM      = 1 << 1,
     ZEGO_MIX_STREAM         = ZEGOAPI_MIX_STREAM,
-    /**  单主播模式 */
+    /**  单主播模式，直播流会直接推到CDN，不经过即构服务器 */
     ZEGOAPI_SINGLE_ANCHOR   = 1 << 2,
     ZEGO_SINGLE_ANCHOR      = ZEGOAPI_SINGLE_ANCHOR,
 };
@@ -364,32 +369,33 @@ enum ZegoAPIModuleType
     ZEGOAPI_MODULE_AUDIO            = 0x4 | 0x8,
 };
 
+/** 推流质量 */
 typedef struct
 {
-    /** 视频帧率(采集) */
+    /** 视频采集帧率(fps) */
     double cfps;
-    /** 视频帧率(编码) */
+    /** 视频编码帧率(fps) */
     double vencFps;
-    /** 视频帧率(网络发送) */
+    /** 视频网络发送帧率(fps) */
     double fps;
-    /** 视频码率(kb/s) */
+    /** 视频码率(kbps) */
     double kbps;
     
-    /** 音频帧率(采集) */
+    /** 音频采集帧率(fps) */
     double acapFps;
-    /** 音频帧率(网络发送) */
+    /** 音频网络发送帧率(fps) */
     double afps;
-    /** 音频码率(kb/s) */
+    /** 音频码率(kbps) */
     double akbps;
     
-    /** 延时(ms) */
+    /** 本机到即构服务器的往返时延(ms) */
     int rtt;
-    /** 丢包率(0~255) */
+    /** 发送丢包(0~255)，数值越大丢包越高，丢包率 = pktLostRate/255 */
     int pktLostRate;
-    /** 质量(0~3) */
+    /** 本机综合网络质量(0~3)，分别对应优、良、中、差 */
     int quality;
     
-    /** 是否硬编 */
+    /** 是否开启硬件编码 */
     bool isHardwareVenc;
     /** 视频宽度 */
     int width;
@@ -489,10 +495,11 @@ typedef enum : NSUInteger {
     
 } ZegoAPITrafficControlProperty;
 
+/** 开启流量控制视频码率低于设置的视频最低码率时 SDK 推流策略 */
 typedef enum : NSUInteger {
-    /** 低于设置的最低码率时，停止视频发送 */
+    /** 低于设置的最低码率时，停止视频发送，默认 */
     ZEGOAPI_TRAFFIC_CONTROL_MIN_VIDEO_BITRATE_NO_VIDEO = 0,
-    /** 低于设置的最低码率时，视频以极低的频率发送 （不超过2FPS) */
+    /** 低于设置的最低码率时，视频以极低的帧率发送 （不超过2fps) */
     ZEGOAPI_TRAFFIC_CONTROL_MIN_VIDEO_BITRATE_ULTRA_LOW_FPS
     
 } ZegoAPITrafficControlMinVideoBitrateMode;
@@ -514,22 +521,22 @@ enum ZegoAPIAudioRecordMask
 {
     /** 关闭音频录制 */
     ZEGOAPI_AUDIO_RECORD_NONE      = 0x0,
-    /** 打开采集录制 */
+    /** 打开采集录制，即录制推流端音频 */
     ZEGOAPI_AUDIO_RECORD_CAP       = 0x01,
-    /** 打开渲染录制 */
+    /** 打开渲染录制，即录制拉流端音频 */
     ZEGOAPI_AUDIO_RECORD_RENDER    = 0x02,
-    /** 打开采集和渲染混音结果录制 */
+    /** 打开采集和渲染混音结果录制，即录制推流、拉流端混音音频 */
     ZEGOAPI_AUDIO_RECORD_MIX       = 0x04
 };
 
 /** 音频录制配置信息 */
 typedef struct
 {
-    /** 启用音频源选择，参考 ZegoAVAPIAudioRecordMask */
+    /** 启用音频源选择，详细请参考 ZegoAVAPIAudioRecordMask */
     unsigned int mask;
-    /** 采样率 8000, 16000, 22050, 24000, 32000, 44100, 48000 */
+    /** 采样率 支持 8000, 16000, 22050, 24000, 32000, 44100, 48000 */
     int sampleRate;
-    /** 声道数 1(单声道) 或 2(双声道) */
+    /** 声道数 支持1(单声道) 或 2(双声道) */
     int channels;
     
 } ZegoAPIAudioRecordConfig;
@@ -649,6 +656,12 @@ typedef enum : NSUInteger
     ZEGOAPI_RELAY_CDN_SERVER_DISCONNECTED = 13,
     /**< 主动断开 */
     ZEGOAPI_RELAY_DISCONNECTED = 14,
+    /**< 混流输入流会话关闭, 混流转推CDN时有效 */
+    ZEGOAPI_MIXSTREAM_ALL_INPUT_STREAM_CLOSED = 1214,
+    /**< 混流输入流全部没有数据, 混流转推CDN时有效 */
+    ZEGOAPI_MIXSTREAM_ALL_INPUT_STREAM_NODATA = 1215,
+    /**< 混流服务器内部错误，混流转推CDN时有效 */
+    ZEGOAPI_MIXSTREAM_SERVER_INTERNAL_ERROR = 1230,
 } ZegoAPIStreamRelayCDNDetail;
 
 /**
@@ -685,10 +698,52 @@ typedef enum : NSInteger
 {
     /** 一般性错误 */
     ZEGOAPI_DEVICE_ERROR_GENERIC = -1,
+    /** 无效设备 ID */
+    ZEGOAPI_DEVICE_ERROR_INVALID_ID = -2,
     /** 没有权限 */
     ZEGOAPI_DEVICE_ERROR_NO_AUTHORIZATION = -3,
     /** 采集帧率为0 */
     ZEGOAPI_DEVICE_ERROR_ZERO_FPS = -4,
+    /** 设备被占用 */
+    ZEGOAPI_DEVICE_ERROR_IN_USE_BY_OTHER = -5,
+    /** 设备未插入 */
+    ZEGOAPI_DEVICE_ERROR_UNPLUGGED = -6,
+    /** 媒体服务无法恢复 */
+    ZEGOAPI_DEVICE_ERROR_MEDIA_SERVICES_LOST = -8,
+
 } ZegoAPIDeviceErrorCode;
+
+typedef enum : NSInteger
+{
+    /** 一般性错误 */
+    ZEGOAPI_DEVICE_ERROR_REASON_GENERIC = -1,
+    /** 无效设备 ID */
+    ZEGOAPI_DEVICE_ERROR_REASON_INVALID_ID = -2,
+    /** 没有权限 */
+    ZEGOAPI_DEVICE_ERROR_REASON_NO_AUTHORIZATION = -3,
+    /** 采集帧率为0 */
+    ZEGOAPI_DEVICE_ERROR_REASON_ZERO_FPS = -4,
+    /** 设备被占用 */
+    ZEGOAPI_DEVICE_ERROR_REASON_IN_USE_BY_OTHER = -5,
+    /** 设备未插入 */
+    ZEGOAPI_DEVICE_ERROR_REASON_UNPLUGGED = -6,
+    /** 媒体服务无法恢复 */
+    ZEGOAPI_DEVICE_ERROR_REASON_MEDIA_SERVICES_LOST = -8,
+    /** 没有错误 */
+    ZEGOAPI_DEVICE_ERROR_REASON_NONE = 0,
+    /** 禁用 */
+    ZEGOAPI_DEVICE_ERROR_REASON_DISABLED = 2,
+    /** 屏蔽采集 */
+    ZEGOAPI_DEVICE_ERROR_REASON_MUTE = 3,
+    /** 中断 */
+    ZEGOAPI_DEVICE_ERROR_REASON_INTERRUPTION = 4,
+    /** 在后台 */
+    ZEGOAPI_DEVICE_ERROR_REASON_IN_BACKGROUND = 5,
+    /** 前台有多个 APP 运行 */
+    ZEGOAPI_DEVICE_ERROR_REASON_MULTI_FOREGROUND_APP = 6,
+    /** 系统压力过大 */
+    ZEGOAPI_DEVICE_ERROR_REASON_SYSTEM_PRESSURE = 7,
+
+}ZegoAPIDeviceErrorReason;
 
 #endif /* zego_api_defines_oc_h */
