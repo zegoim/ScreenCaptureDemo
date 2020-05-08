@@ -23,9 +23,7 @@ struct ZegoThumbnailWindowInfo
 	ZegoWindowHandle handle;					///< 窗口句柄
 	char window_title[ZEGO_MAX_TITLE];			///< 窗口标题（windows当isScreen为true时 格式为 屏幕1----\\\\.\\DISPLAY1)
 	ZegoThumbnailIconBits *icon_bits;			///< 源窗口进程图标数据
-#ifndef WIN32
 	ZegoThumbnailIconBits *image_bits;			///< (macOS使用) 缩略图数据
-#endif
 	bool isScreen;								///< 是否是屏幕
 };
 
@@ -34,7 +32,8 @@ enum ZegoThumbnailShowWindowCmd
 	kZegoThumbnailShowWindowCmdShow = 1,			///< 置顶显示
 	kZegoThumbnailShowWindowCmdHide = 2,			///< 隐藏
 	kZegoThumbnailShowWindowCmdMax = 3,             ///< 最大化窗口
-	kZegoThumbnailShowWindowCmdMin = 4				///< 最小化窗口
+	kZegoThumbnailShowWindowCmdMin = 4,				///< 最小化窗口
+	kZegoThumbnailShowWindowCmdActive = 5			///< 激活窗口
 };
 
 enum ZegoThumbnailWindowStatus

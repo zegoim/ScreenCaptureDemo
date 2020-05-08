@@ -49,15 +49,7 @@ enum ZegoScreenCaptureCaptureError
     kZegoCaptureErrorTargetUnspecified = 2,			///< 采集目标未指定
     kZegoCaptureErrorTargetInvalid = 3, 			///< 采集目标失效，比如显示器被拔掉、窗口被关闭
     kZegoCaptureErrorCaptureFunctionFailed = 4,
-};
-
-enum ZegoScreenCaptureCallBackIndex
-{
-	kCaptureErrorNotify = 1,
-	kCapturedWindowMovedNotify = 2,
-	kCapturedFrameAvailableNotify = 3,
-	kThumbnailWindowChangeNotify = 4,
-	kScreenCaptureWindowChangeNotify
+	KZegoCaptureErrorScreenChange = 5				//屏幕分辨率改变
 };
 
 /// \brief 采集错误回调
@@ -76,7 +68,9 @@ enum ZegoScreenCaptureWindowStatus
 	kZegoScreenCaptureWindowDeactive,				///< 窗口失去激活
 	kZegoScreenCaptureWindowShow,					///< 窗口显示
 	kZegoScreenCaptureWindowHide,					///< 窗口隐藏
-	kZegoScreenCaptureWindowMove					///< 窗口移动
+	kZegoScreenCaptureWindowMove,					///< 窗口移动
+	kZegoScreenCaptureWindowCover,					///< 窗口被覆盖
+	kZegoScreenCaptureWindowUnCover					///< 覆盖窗口被移开
 };
 
 struct ZegoScreenCaptureScreenItem
@@ -128,6 +122,9 @@ enum ZegoScreenCaptureWindowMode
 {
 	kZegoScreenCaptureWindowModeWindow = 1,			///< 截取窗口整体画面
 	kZegoScreenCaptureWindowModeClient = 2,			///< 截取窗口客户区
+	kZegoScreenCaptureWindowModeRgn1 = 3,			///< 截取窗口对应屏幕区域	(窗口被覆盖后继续捕获对应区域)
+	kZegoScreenCaptureWindowModeRgn2 = 4,			///< 截取窗口对应屏幕区域	(窗口被覆盖后继续捕获，覆盖区域涂黑)
+	kZegoScreenCaptureWindowModeRgn3 = 5,			///< 截取窗口对应屏幕区域	(窗口被覆盖后停止捕获，返回最后一帧)
 };
 
 struct ZegoScreenCaptureVideoCaptureFormat
@@ -137,6 +134,13 @@ struct ZegoScreenCaptureVideoCaptureFormat
     int strides[4];					///< 采集画面的步长
     int rotation;
     enum ZegoScreenCaptureVideoPixelFormat video_pixel_format;	///< 采集画面数据格式
+};
+
+struct ZegoScreenCaptureProcessWindow
+{
+	char process_path[256];							///< 采集窗口所属进程路径
+	char window_title[256];							///< 窗口标题
+	ZegoWindowHandle handle;						///< 窗口id		
 };
 
 /// \brief 采集数据回调
@@ -150,6 +154,18 @@ struct ZegoScreenCaptureVideoCaptureFormat
 typedef void(*zego_screencapture_captured_frame_available_notify_func)(const void *data, uint32_t length, const struct ZegoScreenCaptureVideoCaptureFormat *video_frame_format, uint64_t reference_time, uint32_t reference_time_scale, void *user_data);
 
 
+/// \brief 桌面组合变更回调(win7下使用)
+/// \param enable 是否开启桌面组合
+/// \param user_data 用户自定义数据
+/// \see ZegoScreenCaptureCaptureError
+typedef void(*zego_screencapture_capture_dwm_composition_change_notify_func)(bool enable, void *data);
+
+/// \brief 窗口采集时窗口所属进程的其他窗口状态变化回调
+/// \param status 窗口状态
+/// \param window_info 窗口信息
+/// \user_info 用户自定义数据
+/// \note status只支持kZegoScreenCaptureWindowActive
+typedef void(*zego_screencapture_capture_process_window_change_notify_func)(enum ZegoScreenCaptureWindowStatus status, struct ZegoScreenCaptureProcessWindow window_info, void *user_data);
 #ifdef __cplusplus
 }
 #endif

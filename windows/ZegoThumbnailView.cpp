@@ -81,6 +81,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 	}
 	else if (event->type() == QEvent::Show)
 	{
+		m_CaptureWinID = NULL;
 		int iCount = 0;
 		ZegoThumbnailWindowInfo *info = zego_windowthumbnail_find_windows(&iCount);
 
@@ -94,7 +95,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 			rect.top = m_rects[m_Infos.size()].top() + 5;
 			rect.right = m_rects[m_Infos.size()].right() - 5;
 			rect.bottom = m_rects[m_Infos.size()].bottom() - 35;
-			if (zego_windowthumbnail_register((ZegoWindowHandle)this->winId(), info[i].thumbnail_id, &rect))
+			if (zego_windowthumbnail_register((ZegoWindowHandle)this->winId(), info[i].thumbnail_id, &rect,NULL))
 			{
 
 				ThumbnailInfo Info;
@@ -127,5 +128,5 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 		}
 		m_Infos.clear();
 	}
-	return true;
+	return __super::eventFilter(watched, event);
 }

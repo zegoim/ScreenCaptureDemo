@@ -40,6 +40,12 @@ SCREENCAPTURE_API void zego_screencapture_set_fps(int fps);
 /// \note macOS下设置window setSharingType:NSWindowSharingNone 则会被过滤
 SCREENCAPTURE_API void zego_screencapture_set_excluded_windows(ZegoWindowHandle* handle_list,int count,bool add);
 
+/// \brief 指定窗口,在采集窗口时将这些窗口过滤,不提示被覆盖(macOS没有实现)
+/// \param handle_list 待过滤的窗口句柄列表
+/// \param count 窗口数量
+/// \param add true 添加过滤窗口,false 移除过滤窗口
+SCREENCAPTURE_API void zego_screencapture_set_cover_excluded_windows(ZegoWindowHandle* handle_list, int count, bool add);
+
 /// \brief 设置时间戳偏移
 /// \param offset 外部提供的时间戳偏移，默认为0
 SCREENCAPTURE_API void zego_screencapture_set_timestamp_offset(uint64_t offset);
@@ -56,7 +62,7 @@ SCREENCAPTURE_API void zego_screencapture_activate_window_when_capturing(int act
 /// \see zego_screencapture_enum_window_list
 SCREENCAPTURE_API int zego_screencapture_set_target_window(ZegoWindowHandle handle);
 
-/// \brief 在采集目标为单个窗口的模式下,设置目标采集模式,比如是全部窗口内容还是窗口客户区内容
+/// \brief 在采集目标为单个窗口的模式下,设置目标采集模式,比如是全部窗口内容还是窗口客户区内容(macOS没有实现)
 /// \param mode 窗口采集模式,默认采集整个窗口
 /// \return 设置成功返回非0值,否则返回0
 /// \note 在zego_screencapture_set_target_window后调用本接口进行设置,kZegoScreenCaptureWindowModelClient仅支持有限窗口
@@ -74,7 +80,7 @@ SCREENCAPTURE_API const char* zego_screencapture_get_window_screen(ZegoWindowHan
 /// \param handle Windows平台为窗口句柄,可通过zego_screencapture_enum_window_list获取
 /// \param rect 坐标矩形
 /// \return 窗口无效或者窗口被最小化隐藏等坐标无效时返回false,获取到实际坐标返回true
-SCREENCAPTURE_API bool zego_screencapture_get_window_rect(ZegoWindowHandle handle, ZegoRect* rect);
+SCREENCAPTURE_API bool zego_screencapture_get_window_rect(ZegoWindowHandle handle, struct ZegoRect* rect);
 
 /// \brief 设置采集目标区域,单位为像素,支持高DPI及多屏坐标，左上角为坐标原点
 /// \param screen 屏幕ID,在windows未使用,在mac_osx中为CGDirectDisplayID
@@ -126,8 +132,8 @@ SCREENCAPTURE_API void zego_screencapture_free_screen_list(const struct ZegoScre
 /// \see zego_screencapture_free_window_list
 SCREENCAPTURE_API const struct ZegoScreenCaptureWindowItem* zego_screencapture_enum_window_list(int isIncludeIconic, uint32_t *count);
 
-/// \brief 同步释放枚举到的屏幕列表
-/// \param window_list 枚举到的屏幕列表首地址
+/// \brief 同步释放枚举到的窗口列表
+/// \param window_list 枚举到的窗口列表首地址
 SCREENCAPTURE_API void zego_screencapture_free_window_list(const struct ZegoScreenCaptureWindowItem *window_list);
 
 /// \brief 设置视频采集的格式
@@ -159,6 +165,17 @@ SCREENCAPTURE_API void zego_screencapture_reg_captured_window_status_change_noti
 /// \param notify 通知函数
 /// \param data 用户自定义数据,回调时透传
 SCREENCAPTURE_API void zego_screencapture_reg_capture_error_notify(zego_screencapture_capture_error_notify_func notify, void *data);
+
+/// \brief 注册系统桌面组合开关通知(win7)
+/// \param notify 通知函数
+/// \param data 用户自定义数据,回调时透传
+SCREENCAPTURE_API void zego_screencapture_reg_capture_dwm_composition_change_notify(zego_screencapture_capture_dwm_composition_change_notify_func notify, void *data);
+
+
+/// \brief 注册监控采集窗口所属进程的窗口激活事件
+/// \param notify 通知函数
+/// \param data 用户自定义数据,回调时透传
+SCREENCAPTURE_API void zego_screencapture_reg_capture_process_window_change_notify(zego_screencapture_capture_process_window_change_notify_func notify, void *data);
 
 #ifdef __cplusplus
 }

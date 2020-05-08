@@ -25,10 +25,11 @@ extern "C" {
 	/// \param destination_handle 目的窗口的句柄,必须是顶层窗口
 	/// \param thumbnail_id 缩略图标志 为zego_thumbnail_find_windows或者zego_windowthumbnail_window_status_change_notify_func返回的窗口列表中的thumbnail_id
 	/// \param destination_rect 目的窗口缩略图显示区域,目的窗口坐标系
+	/// \param destination_client_rect 目的窗口客户区区域,目的窗口坐标系
 	/// \return 成功或失败
 	/// \see zego_thumbnail_find_windows
 	/// \see zego_windowthumbnail_window_status_change_notify_func
-	SCREENCAPTURE_API bool zego_windowthumbnail_register(ZegoWindowHandle destination_handle, int thumbnail_id, struct ZegoRect* destination_rect);
+	SCREENCAPTURE_API bool zego_windowthumbnail_register(ZegoWindowHandle destination_handle, int thumbnail_id, struct ZegoRect* destination_rect, struct ZegoRect* destination_client_rect);
 #else
 	/// \brief 同步注册缩略图
 	/// \param handle 缩略图标志 为zego_thumbnail_find_windows或者zego_windowthumbnail_window_status_change_notify_func返回的窗口列表中的handle
@@ -39,12 +40,13 @@ extern "C" {
 #endif
 	/// \brief 更新缩略图位置
 	/// \param thumbnail_id 缩略图标志 为zego_thumbnail_find_windows或者zego_windowthumbnail_window_status_change_notify_func返回的窗口列表中的thumbnail_id
-	/// \param destination_rect 缩略图显示新的区域
+	/// \param destination_rect 缩略图显示新的区域,目的窗口坐标系
+	/// \param destination_client_rect 目的窗口客户区区域,目的窗口坐标系
 	/// \return 成功或失败
 	/// \see zego_thumbnail_find_windows
 	/// \see zego_windowthumbnail_window_status_change_notify_func
 	/// \see macOS没有实现
-	SCREENCAPTURE_API bool zego_windowthumbnail_update(int thumbnail_id, struct ZegoRect* destination_rect);
+	SCREENCAPTURE_API bool zego_windowthumbnail_update(int thumbnail_id, struct ZegoRect* destination_rect, struct ZegoRect* destination_client_rect);
 
 	/// \brief 检测是否能够开始共享
 	/// \param handle 缩略图标志 为zego_thumbnail_find_windows或者zego_windowthumbnail_window_status_change_notify_func返回的窗口列表中的handle
@@ -60,7 +62,6 @@ extern "C" {
 	/// \see zego_thumbnail_find_windows
 	/// \see zego_windowthumbnail_window_status_change_notify_func
 	SCREENCAPTURE_API bool zego_windowthumbnail_unregister(int thumbnail_id);
-
 
 	/// \brief 显示或隐藏源窗口
 	/// \param handle 窗口句柄

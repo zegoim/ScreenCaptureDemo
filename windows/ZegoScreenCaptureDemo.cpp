@@ -2,6 +2,7 @@
 #include "ZegoScreenCaptureSettings.h"
 #include "ZegoScreenCaptureSettings_p.h"
 
+#include <QAction>
 #include <QStringListModel>
 
 // helper function
@@ -146,7 +147,8 @@ void ZegoScreenCaptureDemo::onOpenThumbnailView()
 {
 	m_ThumbnailView.exec();
 	int WinID = m_ThumbnailView.GetCaptureWindow();
-	emit SetThumbnailWindow(WinID);
+	if (WinID)
+		emit SetThumbnailWindow(WinID);
 }
 
 void ZegoScreenCaptureDemo::connectTargetSelectAction(QSharedPointer<QAction> action)
