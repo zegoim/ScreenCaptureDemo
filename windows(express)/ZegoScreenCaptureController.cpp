@@ -449,8 +449,10 @@ void ZegoScreenCaptureController::onUiResolutionSelectChanged(QSize resolution)
 	// 直播过程中该分辨率最好不要发生变化，否则可能影响服务器的录制
 	auto engine = ZegoExpressSDK::getEngine();
 	ZegoVideoConfig tempvideoconfig = engine->getVideoConfig();
-	tempvideoconfig.captureWidth = resolution.width();
-	tempvideoconfig.captureHeight = resolution.height();
+// 	tempvideoconfig.captureWidth = resolution.width();
+// 	tempvideoconfig.captureHeight = resolution.height();
+	tempvideoconfig.encodeHeight = resolution.height();
+	tempvideoconfig.encodeWidth = resolution.width();
 
 	engine->setVideoConfig(tempvideoconfig);
 }
