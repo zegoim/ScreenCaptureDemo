@@ -560,8 +560,8 @@ namespace ZegoScreenCapture_.net_
             zego_video_config config = ExpressManager.zego_express_get_video_config(zego_publish_channel.zego_publish_channel_main);
             config.fps = this.trackBarFPS.Value;
             config.bitrate = this.trackBarBitrate.Value;
-            config.capture_width = this.m_resolutions[this.comboBoxResolution.SelectedIndex].Item1;
-            config.capture_height = this.m_resolutions[this.comboBoxResolution.SelectedIndex].Item2;
+            config.encode_width = this.m_resolutions[this.comboBoxResolution.SelectedIndex].Item1;
+            config.encode_height = this.m_resolutions[this.comboBoxResolution.SelectedIndex].Item2;
             ExpressManager.zego_express_set_video_config(config, zego_publish_channel.zego_publish_channel_main);
         }
 
