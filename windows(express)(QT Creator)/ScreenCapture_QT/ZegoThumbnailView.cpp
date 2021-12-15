@@ -7,12 +7,12 @@ ZegoThumbnailView::ZegoThumbnailView(QWidget *parent)
 	: QDialog(parent)
 {
 	ui.setupUi(this);
-	setWindowTitle(QStringLiteral("´°¿ÚÔ¤ÀÀ"));
+	setWindowTitle(QStringLiteral("çª—å£é¢„è§ˆ"));
 
 	QDesktopWidget* desktopWidget = QApplication::desktop();
-	// 	//»ñÈ¡¿ÉÓÃ×ÀÃæ´óÐ¡  
+	// 	//èŽ·å–å¯ç”¨æ¡Œé¢å¤§å°  
 	// 	QRect deskRect = desktopWidget->availableGeometry();
-	//»ñÈ¡Éè±¸ÆÁÄ»´óÐ¡  
+	//èŽ·å–è®¾å¤‡å±å¹•å¤§å°  
 	QRect screenRect = desktopWidget->screenGeometry();
 
 	for (int i = 0; i < 4; i++)
@@ -30,7 +30,7 @@ ZegoThumbnailView::ZegoThumbnailView(QWidget *parent)
 	setFixedSize(m_rects[0].width() * 4, m_rects[0].height() * 4);
 
 	installEventFilter(this);
-	//×¢²á»Øµ÷£¬²¶×½ÐÂ´°¿Ú½¨Á¢Ïú»ÙºÍ±êÌâ¸Ä±äÊÂ¼þ
+	//æ³¨å†Œå›žè°ƒï¼Œæ•æ‰æ–°çª—å£å»ºç«‹é”€æ¯å’Œæ ‡é¢˜æ”¹å˜äº‹ä»¶
 	zego_windowthumbnail_reg_window_status_change_notify(ThumbnailWindowCallBack, this);
 }
 
@@ -81,7 +81,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 	if (event->type() == QEvent::MouseButtonDblClick)
 	{
 		QPoint coursePoint;
-		coursePoint = QCursor::pos();//»ñÈ¡µ±Ç°¹â±êµÄÎ»ÖÃ
+		coursePoint = QCursor::pos();//èŽ·å–å½“å‰å…‰æ ‡çš„ä½ç½®
 		coursePoint = QWidget::mapFromGlobal(coursePoint);
 		for (const auto& it : m_Infos)
 		{
@@ -116,7 +116,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 				{
 					QImage image(info[i].image_bits->bits, abs(info[i].image_bits->width), abs(info[i].image_bits->height), QImage::Format_ARGB32);
 
-					QString s = QStringLiteral("C:\\work\\%1Í¼Æ¬.bmp").arg(info[i].window_title);
+					QString s = QStringLiteral("C:\\work\\%1å›¾ç‰‡.bmp").arg(info[i].window_title);
 
 					s = "C:\\work\\111111111111111.bmp";
 
@@ -130,7 +130,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 				{
 					QImage image(info[i].icon_bits->bits, abs(info[i].icon_bits->width), abs(info[i].icon_bits->height), QImage::Format_ARGB32);
 
-					QString s = QStringLiteral("C:\\work\\%1Í¼±ê.bmp").arg(info[i].window_title);
+					QString s = QStringLiteral("C:\\work\\%1å›¾æ ‡.bmp").arg(info[i].window_title);
 
 					s = "C:\\work\\22222222222222222.bmp";
 					image.save(s);
@@ -138,7 +138,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 			}
 		}
 
-		//Ö»×¢²áÇ°16¸ö´°¿Ú
+		//åªæ³¨å†Œå‰16ä¸ªçª—å£
 		int ShowCount = iCount > 16 ? 16 : iCount;
 
 		for (int i = 0; i < ShowCount; i++)
@@ -162,7 +162,7 @@ bool ZegoThumbnailView::eventFilter(QObject *watched, QEvent *event)
 				Info.rectThumbnail.setBottom(rect.bottom);
 				if (info[i].icon_bits)
 				{
-					//³ÌÐòÍ¼±êÊý¾Ý
+					//ç¨‹åºå›¾æ ‡æ•°æ®
 					Info.pixmap = QPixmap::fromImage(QImage(info[i].icon_bits->bits, info[i].icon_bits->width, info[i].icon_bits->height, QImage::Format_ARGB32));
 				}
 

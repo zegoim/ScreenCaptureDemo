@@ -17,9 +17,9 @@ int main(int argc, char *argv[])
 	defaultFont.setPixelSize(16);
 	app.setFont(defaultFont);
 
-	//¸ºÔğÆÁÄ»²É¼¯Ïà¹Ø³õÊ¼»¯²Ù×÷
+	//è´Ÿè´£å±å¹•é‡‡é›†ç›¸å…³åˆå§‹åŒ–æ“ä½œ
 	ZegoScreenCaptureController controller;
-	//¸ºÔğDemo½çÃæ¹ÜÀí
+	//è´Ÿè´£Demoç•Œé¢ç®¡ç†
 	ZegoScreenCaptureDemo widget; 
     //controller.video_play = widget.video_play;
 	controller.m_CaptureView = &widget.getView();

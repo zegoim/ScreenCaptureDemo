@@ -54,7 +54,7 @@ public:
 	Action removeExcludedWindowAction(void) const { return m_removeExcludedWindowAction; }
 	Action openThumbnailViewAction(void) const { return m_openThumbnailViewAction; }
 
-	//Ôö¼Ó
+	//å¢žåŠ 
 	Action PlayAction(void) const { return m_PlayAction; }
 
 	Q_SIGNAL void screenIndexChanged_p(int index);

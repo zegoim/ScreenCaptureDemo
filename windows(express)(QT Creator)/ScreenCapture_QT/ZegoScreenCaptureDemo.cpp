@@ -23,7 +23,7 @@ ZegoScreenCaptureDemo::ZegoScreenCaptureDemo(QWidget *parent)
 {
 	ui.setupUi(this);
 	setFixedSize(720, 480);
-	setWindowTitle(QStringLiteral("ZEGO桌面分享/外部采集Demo"));
+	setWindowTitle(QStringLiteral("ZEGO妗岄潰鍒嗕韩/澶栭儴閲囬泦Demo"));
 }
 
 ZegoScreenCaptureDemo::~ZegoScreenCaptureDemo()
@@ -86,7 +86,7 @@ void ZegoScreenCaptureDemo::attachSettings(ZegoScreenCaptureSettings* settings)
 	attachButton(ui.btn_capture, settings->d_func()->captureAction());
 	attachButton(ui.btn_publish, settings->d_func()->publishAction());
 
-	//添加
+	//娣诲姞
 	attachButton(ui.btn_play, settings->d_func()->PlayAction());
 
 	connect(settings->d_func(), &ZegoScreenCaptureSettingsPrivate::boundingRectangleChanged_p,

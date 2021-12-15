@@ -28,9 +28,9 @@ protected:
 	void init(void);
 	void uninit(void);
 
-	//longjuncaiÖØĞ´IZegoEventHandlerµÄÍÆÁ÷×´Ì¬ÏûÏ¢»Øµ÷º¯Êı->onPublisherStateUpdate
+	//longjuncaié‡å†™IZegoEventHandlerçš„æ¨æµçŠ¶æ€æ¶ˆæ¯å›è°ƒå‡½æ•°->onPublisherStateUpdate
 	void onPublisherStateUpdate(const std::string& streamID, ZEGO::EXPRESS::ZegoPublisherState state, int errorCode, const std::string& extendedData);
-	//longjuncaiÖØĞ´IZegoEventHandlerµÄÖÊÁ¿ÏûÏ¢»Øµ÷º¯Êı->onPublisherQualityUpdate
+	//longjuncaié‡å†™IZegoEventHandlerçš„è´¨é‡æ¶ˆæ¯å›è°ƒå‡½æ•°->onPublisherQualityUpdate
 	void onPublisherQualityUpdate(const std::string& streamID, const ZEGO::EXPRESS::ZegoPublishStreamQuality& quality);
 
 	void onPlayerStateUpdate(const std::string& streamID, ZegoPlayerState state, int errorCode, const std::string& extendedData);
@@ -38,7 +38,7 @@ protected:
 	// screen capture callback
 	static void OnCaptureError(enum ZegoScreenCaptureCaptureError error, void *user_data);
 	static void OnCapturedWindowMoved(void *handle, int left, int top, int width, int height, void *user_data);
-	//ĞŞ¸Ä²ÉÓÃExpressµÄ·½Ê½
+	//ä¿®æ”¹é‡‡ç”¨Expressçš„æ–¹å¼
 	static void OnCapturedFrameAvailable(const char *data, uint32_t length, const struct ZegoScreenCaptureVideoCaptureFormat *video_frame_format, uint64_t reference_time, uint32_t reference_time_scale, void *user_data);
 
 	static void OnCaptureWindowChange(ZegoScreenCaptureWindowStatus status_code, ZegoWindowHandle handle, ZegoScreenCaptureRect rect, void *user_data);
@@ -74,8 +74,8 @@ private:
 
 	ZegoScreenCaptureSettings* m_settings = nullptr;
 	QString m_userId;
-	//SDKÍÆÁ÷Æô¶¯»Øµ÷
+	//SDKæ¨æµå¯åŠ¨å›è°ƒ
 	std::shared_ptr<CustomVideoCapturer> mCustomVideoCapture;
-	//SDK×´Ì¬µÈĞÅÏ¢»Øµ÷
+	//SDKçŠ¶æ€ç­‰ä¿¡æ¯å›è°ƒ
 	std::shared_ptr<IZegoEventHandler> eventHandler;  
 };

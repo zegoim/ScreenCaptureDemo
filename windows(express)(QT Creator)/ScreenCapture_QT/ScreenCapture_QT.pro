@@ -1,20 +1,4 @@
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
-else:unix: LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
-
-INCLUDEPATH += $$PWD/../ZegoExpress/include
-INCLUDEPATH += $$PWD/../ZegoExpress/include/internal
-DEPENDPATH += $$PWD/../ZegoExpress/lib/x86
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
-else:unix: LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
-
-INCLUDEPATH += $$PWD/../ZegoScreenCapture/include
-DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x86
-
-QT += widgets
+include(ScreenCaptureDemo(Express SDK).pri)
 
 DISTFILES += \
     ScreenCaptureDemo(Express SDK).pri \
@@ -46,3 +30,38 @@ SOURCES += \
     ZegoScreenCaptureSettings.cpp \
     ZegoThumbnailView.cpp \
     main.cpp
+
+win32:CONFIG(release, debug|release) {
+    contains(DEFINES, WIN64) {
+        LIBS += -L$$PWD/../ZegoExpress/lib/x64/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoScreenCapture/libs/x64/ -lZegoScreenCapture
+        DEPENDPATH += $$PWD/../ZegoExpress/lib/x64
+        DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x64
+
+    } else {
+        LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
+        DEPENDPATH += $$PWD/../ZegoExpress/lib/x86
+        DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x86
+    }
+} else {
+    contains(DEFINES, WIN64) {
+        LIBS += -L$$PWD/../ZegoExpress/lib/x64/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoScreenCapture/libs/x64/ -lZegoScreenCapture
+        DEPENDPATH += $$PWD/../ZegoExpress/lib/x64
+        DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x64
+
+    } else {
+        LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
+        DEPENDPATH += $$PWD/../ZegoExpress/lib/x86
+        DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x86
+    }
+}
+
+INCLUDEPATH += $$PWD/../ZegoExpress/include
+INCLUDEPATH += $$PWD/../ZegoExpress/include/internal
+INCLUDEPATH += $$PWD/../ZegoScreenCapture/include
+
+
+QT += widgets
