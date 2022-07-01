@@ -1,4 +1,4 @@
-ï»¿#include "ZegoScreenCaptureSettings.h"
+#include "ZegoScreenCaptureSettings.h"
 #include "ZegoScreenCaptureSettings_p.h"
 
 #include <QAction>
@@ -8,6 +8,7 @@
 ZegoScreenCaptureSettings::ZegoScreenCaptureSettings(QObject *parent)
 	: QObject(parent), d_ptr(new ZegoScreenCaptureSettingsPrivate(this))
 {
+	connect(this, &ZegoScreenCaptureSettings::writeLog_p, this, &ZegoScreenCaptureSettings::WriteLog, Qt::QueuedConnection);
 }
 
 ZegoScreenCaptureSettings::~ZegoScreenCaptureSettings()
@@ -97,6 +98,21 @@ void ZegoScreenCaptureSettings::SetCaptureWindow(qint64 id)
 	d->m_curWindowId = id;
 
 	emit d->windowCaptureChanged_p(d->m_curWindowId);
+}
+
+void ZegoScreenCaptureSettings::WriteLog(const QString& log)
+{
+	appendLogString(log);
+}
+
+void ZegoScreenCaptureSettings::UpdateState(int state)
+{
+	updatePublishState((PublishState)state);
+}
+
+void ZegoScreenCaptureSettings::SetPublishUrl(const QString& rtmp, const QString& hls)
+{
+	setPublishStreamUrl(rtmp, hls);
 }
 
 void ZegoScreenCaptureSettings::setResolutionList(const QVector<QSize>& resolutions, QSize prefered)
@@ -217,7 +233,7 @@ void ZegoScreenCaptureSettings::updateCaptureState(ZegoScreenCaptureSettings::Ca
 	d->m_captureState = state;
 	if (state == CaptureIdle)
 	{
-		d->m_captureAction->setText(QStringLiteral("å¼€å§‹æ•æ‰"));
+		d->m_captureAction->setText(QStringLiteral("¿ªÊ¼²¶×½"));
 		if (d->m_publishState == PublishConnecting || d->m_publishState == Publishing)
 		{
 			d->m_publishAction->trigger();
@@ -225,7 +241,7 @@ void ZegoScreenCaptureSettings::updateCaptureState(ZegoScreenCaptureSettings::Ca
 	}
 	else if (state == CaptureWorking)
 	{
-		d->m_captureAction->setText(QStringLiteral("åœæ­¢æ•æ‰"));
+		d->m_captureAction->setText(QStringLiteral("Í£Ö¹²¶×½"));
 	}
 }
 
@@ -243,7 +259,7 @@ void ZegoScreenCaptureSettings::updatePublishState(ZegoScreenCaptureSettings::Pu
 	if (state == UnPublish)
 	{
 		d->m_publishAction->setEnabled(true);
-		d->m_publishAction->setText(QStringLiteral("å¼€å§‹æŽ¨æµ"));
+		d->m_publishAction->setText(QStringLiteral("¿ªÊ¼ÍÆÁ÷"));
 		emit d->streamUrlChanged_p("", "");
 	}
 	else if (state == PublishConnecting)
@@ -253,14 +269,14 @@ void ZegoScreenCaptureSettings::updatePublishState(ZegoScreenCaptureSettings::Pu
 	else if (state == Publishing)
 	{
 		d->m_publishAction->setEnabled(true);
-		d->m_publishAction->setText(QStringLiteral("åœæ­¢æŽ¨æµ"));
+		d->m_publishAction->setText(QStringLiteral("Í£Ö¹ÍÆÁ÷"));
 	}
 }
 
 void ZegoScreenCaptureSettings::updatePlayState(PlayState state)
 {
 	Q_D(ZegoScreenCaptureSettings);
-	//æ ‡è®°æ˜¯å¦æ­£åœ¨æ‹‰æµ
+	//±ê¼ÇÊÇ·ñÕýÔÚÀ­Á÷
 	bool bPlay = false;
 	if (d->m_playState == state)
 		return;
@@ -274,7 +290,7 @@ void ZegoScreenCaptureSettings::updatePlayState(PlayState state)
 	if ((state == UnPlay)&& (d->m_playState != PlayState::Playing))
 	{
 		d->m_PlayAction->setEnabled(true);
-		d->m_PlayAction->setText(QStringLiteral("å¼€å§‹æ‹‰æµ"));
+		d->m_PlayAction->setText(QStringLiteral("¿ªÊ¼À­Á÷"));
 		//emit d->streamUrlChanged_p("", "");
 	}
 	else if (state == PlayConnecting)
@@ -284,7 +300,7 @@ void ZegoScreenCaptureSettings::updatePlayState(PlayState state)
 	else if (state == Playing)
 	{
 		d->m_PlayAction->setEnabled(true);
-		d->m_PlayAction->setText(QStringLiteral("åœæ­¢æ‹‰æµ"));
+		d->m_PlayAction->setText(QStringLiteral("Í£Ö¹À­Á÷"));
 	}
 }
 
@@ -334,7 +350,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 		}
 	});
 
-	QString refreshText = QStringLiteral("åˆ·æ–°");
+	QString refreshText = QStringLiteral("Ë¢ÐÂ");
 	m_refreshScreenAction = Action(new QAction);
 	m_refreshScreenAction->setText(refreshText);
 	connect(m_refreshScreenAction.data(), &QAction::triggered,
@@ -369,7 +385,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 	});
 
 	m_generateRandomRectAction = Action(new QAction);
-	m_generateRandomRectAction->setText(QStringLiteral("éšæœº"));
+	m_generateRandomRectAction->setText(QStringLiteral("Ëæ»ú"));
 	connect(m_generateRandomRectAction.data(), &QAction::triggered, this, [this](bool checked) 
 	{
 		auto action = dynamic_cast<QAction*>(sender());
@@ -449,19 +465,19 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 	});
 
 	m_cursorSwitchAction = Action(new QAction);
-	m_cursorSwitchAction->setText(QStringLiteral("æ˜¾ç¤ºå…‰æ ‡"));
+	m_cursorSwitchAction->setText(QStringLiteral("ÏÔÊ¾¹â±ê"));
 	m_cursorSwitchAction->setCheckable(true);
 	connect(m_cursorSwitchAction.data(), &QAction::toggled,
 		parent, &ZegoScreenCaptureSettings::cursorToggled);
 
 	m_clickAnimationAction = Action(new QAction);
-	m_clickAnimationAction->setText(QStringLiteral("ç‚¹å‡»åŠ¨ç”»"));
+	m_clickAnimationAction->setText(QStringLiteral("µã»÷¶¯»­"));
 	m_clickAnimationAction->setCheckable(true);
 	connect(m_clickAnimationAction.data(), &QAction::toggled,
 		parent, &ZegoScreenCaptureSettings::clickAnimationToggled);
 
 	m_captureAction = Action(new QAction);
-	m_captureAction->setText(QStringLiteral("å¼€å§‹æ•æ‰"));
+	m_captureAction->setText(QStringLiteral("¿ªÊ¼²¶×½"));
 	m_captureAction->setData(0);
 	connect(m_captureAction.data(), &QAction::triggered, this, [this](bool) 
 	{
@@ -470,7 +486,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 	});
 
 	m_publishAction = Action(new QAction);
-	m_publishAction->setText(QStringLiteral("å¼€å§‹åˆ†äº«"));
+	m_publishAction->setText(QStringLiteral("¿ªÊ¼·ÖÏí"));
 	m_publishAction->setData(0);
 	connect(m_publishAction.data(), &QAction::triggered, this, [this](bool)
 	{
@@ -480,7 +496,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 
 	//add
 	m_PlayAction = Action(new QAction);
-	m_PlayAction->setText(QStringLiteral("å¼€å§‹æ‹‰æµ"));
+	m_PlayAction->setText(QStringLiteral("¿ªÊ¼À­Á÷"));
 	connect(m_PlayAction.data(), &QAction::triggered, this, [this](bool) {
 		Q_Q(ZegoScreenCaptureSettings);
 		emit q->PlayStreamRequested(m_playState);
@@ -488,7 +504,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 
 
 	m_addExcludedWindowAction = Action(new QAction);
-	m_addExcludedWindowAction->setText(QStringLiteral("æ·»åŠ è¿‡æ»¤çª—å£"));
+	m_addExcludedWindowAction->setText(QStringLiteral("Ìí¼Ó¹ýÂË´°¿Ú"));
 	m_addExcludedWindowAction->setData(0);
 	connect(m_addExcludedWindowAction.data(), &QAction::triggered, this, [this](bool)
 	{
@@ -497,7 +513,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 	});
 
 	m_removeExcludedWindowAction = Action(new QAction);
-	m_removeExcludedWindowAction->setText(QStringLiteral("ç§»é™¤è¿‡æ»¤çª—å£"));
+	m_removeExcludedWindowAction->setText(QStringLiteral("ÒÆ³ý¹ýÂË´°¿Ú"));
 	m_removeExcludedWindowAction->setData(0);
 	connect(m_removeExcludedWindowAction.data(), &QAction::triggered, this, [this](bool)
 	{
@@ -506,7 +522,7 @@ ZegoScreenCaptureSettingsPrivate::ZegoScreenCaptureSettingsPrivate(ZegoScreenCap
 	});
 
 	m_openThumbnailViewAction = Action(new QAction);
-	m_openThumbnailViewAction->setText(QStringLiteral("çª—å£é¢„è§ˆ"));
+	m_openThumbnailViewAction->setText(QStringLiteral("´°¿ÚÔ¤ÀÀ"));
 	m_openThumbnailViewAction->setData(0);
 	connect(m_openThumbnailViewAction.data(), &QAction::triggered, this, [this](bool)
 	{

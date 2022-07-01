@@ -67,6 +67,9 @@ public:
 	//add
 	void updatePlayState(PlayState state);
 Q_SLOT void SetCaptureWindow(qint64 id);
+Q_SLOT void WriteLog(const QString& log);
+Q_SLOT void UpdateState(int state);
+Q_SLOT void SetPublishUrl(const QString& rtmp, const QString& hls);
 Q_SIGNALS:
 	void targetChanged(int target);
 	void screenRefreshRequested(void);
@@ -85,6 +88,7 @@ Q_SIGNALS:
 	void removeExcludedWindowRequested(void);
 	void thumbnailWindowCapture(qint64 id);
 	void PlayStreamRequested(int curState);
+	void writeLog_p(const QString& log);
 
 private:
 	friend ZegoScreenCaptureDemo;

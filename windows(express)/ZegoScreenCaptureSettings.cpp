@@ -8,6 +8,7 @@
 ZegoScreenCaptureSettings::ZegoScreenCaptureSettings(QObject *parent)
 	: QObject(parent), d_ptr(new ZegoScreenCaptureSettingsPrivate(this))
 {
+	connect(this, &ZegoScreenCaptureSettings::writeLog_p, this, &ZegoScreenCaptureSettings::WriteLog, Qt::QueuedConnection);
 }
 
 ZegoScreenCaptureSettings::~ZegoScreenCaptureSettings()
@@ -97,6 +98,21 @@ void ZegoScreenCaptureSettings::SetCaptureWindow(qint64 id)
 	d->m_curWindowId = id;
 
 	emit d->windowCaptureChanged_p(d->m_curWindowId);
+}
+
+void ZegoScreenCaptureSettings::WriteLog(const QString& log)
+{
+	appendLogString(log);
+}
+
+void ZegoScreenCaptureSettings::UpdateState(int state)
+{
+	updatePublishState((PublishState)state);
+}
+
+void ZegoScreenCaptureSettings::SetPublishUrl(const QString& rtmp, const QString& hls)
+{
+	setPublishStreamUrl(rtmp, hls);
 }
 
 void ZegoScreenCaptureSettings::setResolutionList(const QVector<QSize>& resolutions, QSize prefered)

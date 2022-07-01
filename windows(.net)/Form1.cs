@@ -22,8 +22,9 @@ namespace ZegoScreenCapture_.net_
         string m_userName = "ScreenCaptureDemo";
         string m_roomID = "123456";
 
-        uint m_appiId = 0;
-        string m_appSign = "abcd";
+        uint m_appiId = 1;
+        string m_appSign = ;
+
         //屏幕采集的回调对象
         ScreenCaptureManager.zego_screencapture_capture_error_notify_func m_zego_screencapture_capture_error_notify;
         ScreenCaptureManager.zego_screencapture_capture_process_window_change_notify_func m_zego_screencapture_capture_process_window_change_notify;
@@ -47,6 +48,7 @@ namespace ZegoScreenCapture_.net_
             InitExpress();
             InitScreenCapture();
             InitUI();
+            
         }
 
         private void InitExpress()
@@ -67,15 +69,27 @@ namespace ZegoScreenCapture_.net_
             zego_engine_config engine_config = new zego_engine_config();
 
             zego_log_config logConfig = new zego_log_config();
-            logConfig.log_path = System.Windows.Forms.Application.StartupPath + "/";
+            logConfig.log_path = System.Windows.Forms.Application.StartupPath + "\\";
             logConfig.log_size = 5 * 1024 * 1024;
 
             engine_config.log_config = Marshal.AllocHGlobal(Marshal.SizeOf(logConfig));
             Marshal.StructureToPtr(logConfig, engine_config.log_config, false);
 
             ExpressManager.zego_express_set_engine_config(engine_config);
-            ExpressManager.zego_express_engine_init(m_appiId, m_appSign, true, zego_scenario.zego_scenario_general);
-            //ExpressManager.zego_express_engine_init(1, "9193cc662a1c0ec135ec71fb07194b3841d4ad8378f25990e0a40c7ff42841f7", true, zego_scenario.zego_scenario_general);
+
+            ExpressManager.zego_express_set_log_config(logConfig);
+
+            zego_engine_profile profile = new zego_engine_profile();
+            profile.app_sign = new char[64];
+            profile.app_id = m_appiId;
+            for(int i=0;i<m_appSign.Length;i++)
+            {
+                profile.app_sign[i] = m_appSign[i];
+            }
+
+            profile.scenario = zego_scenario.zego_scenario_general;
+
+            int result = ExpressManager.zego_express_engine_init_with_profile(profile);
 
             zego_custom_video_capture_config custom_video_capture_config = new zego_custom_video_capture_config();
             custom_video_capture_config.buffer_type = zego_video_buffer_type.zego_video_buffer_type_raw_data;

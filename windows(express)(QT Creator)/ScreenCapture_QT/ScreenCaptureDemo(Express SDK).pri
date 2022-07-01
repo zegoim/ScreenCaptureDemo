@@ -8,6 +8,7 @@ message("You are running qmake on a generated .pro file. This may not work!")
 
 
 HEADERS += ./CustomVideoCapture.h \
+    $$PWD/ZegoEventHandler.h \
     ./ZegoCaptureView.h \
     ./ZegoThumbnailView.h \
     ./ZegoScreenCaptureSettings_p.h \
@@ -15,6 +16,7 @@ HEADERS += ./CustomVideoCapture.h \
     ./ZegoScreenCaptureController.h \
     ./ZegoScreenCaptureDemo.h
 SOURCES += ./CustomVideoCapture.cpp \
+    $$PWD/ZegoEventHandler.cpp \
     ./main.cpp \
     ./ZegoCaptureView.cpp \
     ./ZegoScreenCaptureController.cpp \

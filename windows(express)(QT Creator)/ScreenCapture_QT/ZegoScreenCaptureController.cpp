@@ -1,13 +1,14 @@
 #include "ZegoScreenCaptureController.h"
 #include "ZegoScreenCaptureSettings.h"
 #include "ZegoScreenCaptureDemo.h"
+#include "ZegoEventHandler.h"
 
 // screen capture SDK API
 #include "zego-screencapture.h"
 
-//ZegoExpressSDK  2021/1/12  longjuncaiæ·»åŠ 
+//ZegoExpressSDK  2021/1/12  longjuncaiÌí¼Ó
 #include "ZegoExpressSDK.h"
-#include "ZegoInternalEngineImpl.hpp"
+#include "ZegoExpressInterface.h"
 #include "CustomVideoCapture.h"
 using namespace ZEGO::EXPRESS;
 
@@ -16,12 +17,9 @@ using namespace ZEGO::EXPRESS;
 #include <QImage>
 #include <QPixmap>
 
-//å¯åŠ¨Express SDKçš„Appidå’ŒSignkey->å¯ç”¨äºRTCæœåŠ¡å™¨
-unsigned int g_rtmp_appid = 1;
-
-//é€‚é…Expressæ–¹å¼
-
-static const char* g_rtmp_signkey = "";
+// Ïò Zego ¿ØÖÆÌ¨ÉêÇëµÄ appid ºÍ appsign
+unsigned int g_rtmp_appid = /*appID*/;
+static const char* g_rtmp_signkey = /*appsign*/;
 
 ZegoScreenCaptureController::ZegoScreenCaptureController(QObject *parent)
 	: QObject(parent), m_settings(new ZegoScreenCaptureSettings(this))
@@ -30,11 +28,19 @@ ZegoScreenCaptureController::ZegoScreenCaptureController(QObject *parent)
 
 	init();
 
-	// å¿½ç•¥ï¼Œç”¨äºçº¿ç¨‹åŒæ­¥
+	// ºöÂÔ£¬ÓÃÓÚÏß³ÌÍ¬²½
 	connect(this, &ZegoScreenCaptureController::captureStateChanged_p,
 		this, &ZegoScreenCaptureController::onCaptureStateChanged_p, Qt::QueuedConnection);
 	connect(this, &ZegoScreenCaptureController::publishStateChanged_p, 
 		this, &ZegoScreenCaptureController::onPublishStateChanged_p, Qt::QueuedConnection);
+
+	// event handle
+	connect(eventHandler.get(), &ZegoEventHandler::publishStateChanged_p, this, &ZegoScreenCaptureController::onPublishStateChanged_p, Qt::QueuedConnection);
+	// write log
+	connect(eventHandler.get(), &ZegoEventHandler::WriteLog_p, m_settings, &ZegoScreenCaptureSettings::WriteLog, Qt::QueuedConnection);
+	// other
+	connect(eventHandler.get(), &ZegoEventHandler::updatePlayState_p, m_settings, &ZegoScreenCaptureSettings::UpdateState, Qt::QueuedConnection);
+	connect(eventHandler.get(), &ZegoEventHandler::setPublishStreamUrl_p, m_settings, &ZegoScreenCaptureSettings::SetPublishUrl, Qt::QueuedConnection);
 }
 
 ZegoScreenCaptureController::~ZegoScreenCaptureController()
@@ -53,7 +59,7 @@ void ZegoScreenCaptureController::initExpress(void)
 {
 	auto logDir = qApp->applicationDirPath().toUtf8();
 	bool bRet = false;
-	//è®¾ç½®æ—¥å¿—ç›®å½•
+	//ÉèÖÃÈÕÖ¾Ä¿Â¼
 	ZegoEngineConfig config;
 	ZegoLogConfig logConfig;
 	config.logConfig = &logConfig;
@@ -62,28 +68,32 @@ void ZegoScreenCaptureController::initExpress(void)
 	config.logConfig->logPath = std::string(logpath);
 	ZegoExpressSDK::setEngineConfig(config);
 
-	//åˆ›å»ºå¼•æ“
-    auto engine  = ZegoExpressSDK::createEngine(g_rtmp_appid, (const char*)g_rtmp_signkey, true, ZEGO_SCENARIO_GENERAL, nullptr);
+	//´´½¨ÒıÇæ
+	ZegoEngineProfile profile;
+	profile.appID = g_rtmp_appid;
+	profile.appSign = g_rtmp_signkey;
+	profile.scenario = ZEGO_SCENARIO_GENERAL;
+	auto engine  = ZegoExpressSDK::createEngine(profile, nullptr);
 	Q_ASSERT(engine != nullptr);
 
-	//è®¾ç½®è‡ªå®šä¹‰è§†é¢‘é‡‡é›†å¯¹è±¡
+	//ÉèÖÃ×Ô¶¨ÒåÊÓÆµ²É¼¯¶ÔÏó
 	mCustomVideoCapture = std::shared_ptr<CustomVideoCapturer>(new CustomVideoCapturer);
 	ZegoCustomVideoCaptureConfig customVideoCaptureConfig;
 	customVideoCaptureConfig.bufferType = ZEGO_VIDEO_BUFFER_TYPE_RAW_DATA;
 
-	//è®¾ç½®è‡ªå®šä¹‰è§†é¢‘é‡‡é›†
+	//ÉèÖÃ×Ô¶¨ÒåÊÓÆµ²É¼¯
 	engine->enableCustomVideoCapture(true, &customVideoCaptureConfig);
 	engine->setCustomVideoCaptureHandler(mCustomVideoCapture);
 
-	//è®¾ç½®äº‹ä»¶å›è°ƒ-ç”¨ä»¥é€šçŸ¥æ¨æµæ‰§è¡ŒçŠ¶æ€
-	eventHandler = std::shared_ptr<IZegoEventHandler> (this);
+	//ÉèÖÃÊÂ¼ş»Øµ÷-ÓÃÒÔÍ¨ÖªÍÆÁ÷Ö´ĞĞ×´Ì¬
+	eventHandler = std::make_shared<ZegoEventHandler>();
 	
 	engine->setEventHandler(eventHandler);
 
-	//åˆ›å»ºç”¨æˆ·ä¿¡æ¯
+	//´´½¨ÓÃ»§ĞÅÏ¢
 	ZegoUser user(m_userId.toStdString(), m_userId.toStdString());
 
-	//ç™»å½•æˆ¿é—´
+	//µÇÂ¼·¿¼ä
 	engine->loginRoom(m_userId.toStdString(), user);
 
 }
@@ -150,57 +160,21 @@ void ZegoScreenCaptureController::bindSettings(void)
 void ZegoScreenCaptureController::uninit(void)
 {
 	zego_screencapture_uninit();
-	//é‡‡ç”¨Expressçš„ç™»å‡ºæ–¹å¼
+	//²ÉÓÃExpressµÄµÇ³ö·½Ê½
 
 	//Loginout &  Destroy Engine
 	{
-		//è·å–å•ä¾‹engine
+		//»ñÈ¡µ¥Àıengine
 		auto engine = ZegoExpressSDK::getEngine();
 		if (engine) {
-			engine->logoutRoom(m_userId.toStdString());
+			eventHandler = nullptr;
+			engine->setEventHandler(nullptr);
 			engine->enableCustomVideoCapture(false, nullptr);
 			engine->setCustomVideoCaptureHandler(nullptr);
+			engine->logoutRoom(m_userId.toStdString());
 			ZegoExpressSDK::destroyEngine(engine);
 		}
 	}
-}
-
-//----é‡å†™
-void ZegoScreenCaptureController::onPublisherStateUpdate(const std::string& streamID, ZEGO::EXPRESS::ZegoPublisherState state, int errorCode, const std::string& extendedData)
-{
-	QString desc = QStringLiteral("## æµçŠ¶æ€å˜æ›´ > %1 ##").arg(state);
-	m_settings->appendLogString(desc);
-
-	//å¦‚æœæ­¤æ—¶æ¨æµæˆåŠŸï¼Œé‚£ä¹ˆæ‰©å±•æ•°æ®ä¼šåŒ…å«RTMPå’Œhlsçš„åœ°å€ï¼Œæ‰“å°æ˜¾ç¤ºå‡ºæ¥
-	if (!extendedData.empty() && (extendedData != "{}"))
-	{
-		std::string strRtmpUrl = "rtmp_url_list";
-		std::string strHlsUrl = "hls_url_list";
-
-		//rtmp
-		uint iPos1 = extendedData.find(strRtmpUrl);
-		uint iPos2 = extendedData.find("[",iPos1+1);
-		uint iPos3 = extendedData.find("]", iPos2+1);
-		if (iPos3 - iPos2 - 3 > 0)
-		{
-			strRtmpUrl = extendedData.substr(iPos2 + 2, iPos3 - iPos2 - 3);
-		}
-
-		//hls
-		iPos1 = extendedData.find(strHlsUrl,iPos3);
-		iPos2 = extendedData.find("[", iPos3 + 1);
-		iPos3 = extendedData.find("]", iPos2 + 1);
-		if (iPos3 - iPos2 - 3 > 0)
-		{
-			strHlsUrl = extendedData.substr(iPos2 + 2, iPos3 - iPos2 - 3);
-		}
-
-		m_settings->setPublishStreamUrl(QString(strRtmpUrl.c_str()), QString(strHlsUrl.c_str()));
-		
-	}
-	
-	// å›è°ƒæ›´æ–°ç•Œé¢è¦åˆ‡æ¢çº¿ç¨‹
-	emit publishStateChanged_p((int)state);
 }
 
 void ZegoScreenCaptureController::onPublishStateChanged_p(int state)
@@ -210,56 +184,15 @@ void ZegoScreenCaptureController::onPublishStateChanged_p(int state)
 
 }
 
-//----é‡å†™
-void ZegoScreenCaptureController::onPublisherQualityUpdate(const std::string& streamID, const ZEGO::EXPRESS::ZegoPublishStreamQuality& quality)
-{
-	if (streamID.empty())
-		return;
-
-	// æ¨æµè´¨é‡å®æ—¶ç»Ÿè®¡
-	QString desc = QStringLiteral("#### å®æ—¶ç»Ÿè®¡ [%1] è´¨é‡: %2 å¸§ç‡: %3 ç ç‡: %4 ####")
-		.arg(QString(streamID.c_str())).arg(quality.level).arg(quality.videoSendFPS).arg(quality.videoKBPS);
-	m_settings->appendLogString(desc);
-}
-
-//é‡å†™ZegoEventçš„æ‹‰æµç›‘å¬
-void ZegoScreenCaptureController::onPlayerStateUpdate(const std::string& streamID, ZegoPlayerState state, int errorCode, const std::string& extendedData)
-{
-	ZegoScreenCaptureSettings::PlayState mystate;
-	//æ›´æ–°æŒ‰é’®çŠ¶æ€ï¼Œç›‘å¬æ‹‰æµçŠ¶æ€
-	switch (state)
-	{
-	case ZEGO::EXPRESS::ZEGO_PLAYER_STATE_NO_PLAY:
-		mystate = ZegoScreenCaptureSettings::UnPlay;
-		break;
-	case ZEGO::EXPRESS::ZEGO_PLAYER_STATE_PLAY_REQUESTING:
-		mystate = ZegoScreenCaptureSettings::PlayConnecting;
-		break;
-	case ZEGO::EXPRESS::ZEGO_PLAYER_STATE_PLAYING:
-		mystate = ZegoScreenCaptureSettings::Playing;
-		break;
-	default:
-		break;
-	}
-	m_settings->updatePlayState(mystate);
-	//æ‹‰æµæˆåŠŸï¼Œé‚£ä¹ˆæ‰“å°æˆåŠŸæç¤ºä¿¡æ¯
-	if (mystate == ZegoScreenCaptureSettings::Playing)
-	{
-		qDebug() << QString("PlayStream Successful!");
-	}
-	//è¾“å‡ºæ‰©å±•æ•°æ®
-	qDebug() << QString(extendedData.c_str());
-}
-
 void ZegoScreenCaptureController::OnCapturedFrameAvailable(const char *data, uint32_t length, const struct ZegoScreenCaptureVideoCaptureFormat *video_frame_format, uint64_t reference_time, uint32_t reference_time_scale, void *user_data)
 {
 
 	ZegoScreenCaptureController *pThis = (ZegoScreenCaptureController *)user_data;
 	if (!pThis)
 		return;
-	//æŸ¥çœ‹æ•æ‰åˆ°çš„ç•Œé¢
-    //QImage image((unsigned char*)data, video_frame_format->width, video_frame_format->height, QImage::Format_ARGB32);
-    //pThis->m_settings->setCaptureImage(QPixmap::fromImage(image));
+	//²é¿´²¶×½µ½µÄ½çÃæ
+	//QImage image((unsigned char*)data, video_frame_format->width, video_frame_format->height, QImage::Format_ARGB32);
+	//pThis->m_settings->setCaptureImage(QPixmap::fromImage(image));
 
 	if (CustomVideoCapturer::mVideoCaptureRunning)
 	{
@@ -277,17 +210,18 @@ void ZegoScreenCaptureController::OnCapturedFrameAvailable(const char *data, uin
 
 		videoFrame->referenceTimeMillsecond = reference_time;
 
-		//å°†æ•°æ®å‹å…¥Express SDKå¼•æ“
-		if (videoFrame)
+		auto engine = ZegoExpressSDK::getEngine();
+		//½«Êı¾İÑ¹ÈëExpress SDKÒıÇæ
+		if (engine && videoFrame)
 		{
-			ZegoExpressSDK::getEngine()->sendCustomVideoCaptureRawData(videoFrame->data.get(), videoFrame->dataLength, videoFrame->param, videoFrame->referenceTimeMillsecond, ZEGO::EXPRESS::ZEGO_PUBLISH_CHANNEL_MAIN);
+			engine->sendCustomVideoCaptureRawData(videoFrame->data.get(), videoFrame->dataLength, videoFrame->param, videoFrame->referenceTimeMillsecond, ZEGO::EXPRESS::ZEGO_PUBLISH_CHANNEL_MAIN);
 		}
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
 	}
 
-	/****å¸§å†…å®¹
+	/****Ö¡ÄÚÈİ
 	std::unique_ptr<unsigned char[]> data;
 	unsigned int dataLength = 0;
 	ZEGO::EXPRESS::ZegoVideoFrameParam param;
@@ -298,7 +232,7 @@ void ZegoScreenCaptureController::OnCapturedFrameAvailable(const char *data, uin
 
 void ZegoScreenCaptureController::OnCapturedWindowMoved(void *handle, int left, int top, int width, int height, void *user_data)
 {
-	// æ­£åœ¨æ•æ‰çš„çª—å£ä½ç½®å˜åŒ–ï¼Œå¯ä¾›UIäº¤äº’ä½¿ç”¨ï¼Œæœ¬Dmeoæ²¡æœ‰ç”¨åˆ°
+	// ÕıÔÚ²¶×½µÄ´°¿ÚÎ»ÖÃ±ä»¯£¬¿É¹©UI½»»¥Ê¹ÓÃ£¬±¾DmeoÃ»ÓĞÓÃµ½
 }
 
 void ZegoScreenCaptureController::OnCaptureError(enum ZegoScreenCaptureCaptureError error, void *user_data)
@@ -307,7 +241,7 @@ void ZegoScreenCaptureController::OnCaptureError(enum ZegoScreenCaptureCaptureEr
 	if (!pThis)
 		return;
 
-	// æ¡Œé¢æ•æ‰å¼‚å¸¸åœæ­¢ï¼Œæ¯”å¦‚æ˜¾ç¤ºå™¨è¢«æ‹”æ‰ã€ç›®æ ‡çª—å£è¢«å…³æ‰
+	// ×ÀÃæ²¶×½Òì³£Í£Ö¹£¬±ÈÈçÏÔÊ¾Æ÷±»°Îµô¡¢Ä¿±ê´°¿Ú±»¹Øµô
 	//emit pThis->captureStateChanged_p(error);
 }
 
@@ -331,7 +265,7 @@ void ZegoScreenCaptureController::OnCaptureWindowChange(ZegoScreenCaptureWindowS
 
 void ZegoScreenCaptureController::onCaptureStateChanged_p(int state)
 {
-	// å› å¼‚å¸¸åœæ­¢é‡‡é›†ï¼Œä¸ºç®€å•æ¨¡æ‹Ÿåœæ­¢æ•æ‰æŒ‰é’®è°ƒç”¨
+	// ÒòÒì³£Í£Ö¹²É¼¯£¬Îª¼òµ¥Ä£ÄâÍ£Ö¹²¶×½°´Å¥µ÷ÓÃ
 	onUiCaptureRequested(ZegoScreenCaptureSettings::CaptureWorking);
 }
 
@@ -341,19 +275,19 @@ void ZegoScreenCaptureController::onUiTargetChanged(int target)
 
 	if (target == ZegoScreenCaptureSettings::Screen)
 	{
-		// è‹¥é€‰æ‹©åˆ†äº«æ•´ä¸ªå±å¹•ï¼Œåˆ™å°†å½“å‰è®¾ç½®çš„å±å¹•åç§°ä¼ å…¥
+		// ÈôÑ¡Ôñ·ÖÏíÕû¸öÆÁÄ»£¬Ôò½«µ±Ç°ÉèÖÃµÄÆÁÄ»Ãû³Æ´«Èë
 		zego_screencapture_set_target_screen(/*m_settings->currentScreen().toUtf8().data()*/0);
 	}
 	else if (target == ZegoScreenCaptureSettings::Window)
 	{
-		// è‹¥é€‰æ‹©åˆ†äº«æŸä¸ªçª—å£ï¼Œåˆ™å°†å½“å‰è®¾ç½®çš„çª—å£å¥æŸ„ä¼ å…¥
+		// ÈôÑ¡Ôñ·ÖÏíÄ³¸ö´°¿Ú£¬Ôò½«µ±Ç°ÉèÖÃµÄ´°¿Ú¾ä±ú´«Èë
 		zego_screencapture_set_target_window_mode((ZegoScreenCaptureWindowMode)m_settings->getWinwowMode());
 		zego_screencapture_set_target_window((void*)m_settings->currentWindow());
 		//zego_screencapture_set_target_window_rect(200, 200, 400, 400);
 	}
 	else if (target == ZegoScreenCaptureSettings::Rectangle)
 	{
-		// è‹¥é€‰æ‹©åˆ†äº«æŸä¸ªåŒºåŸŸï¼Œåˆ™å°†å½“å‰è®¾ç½®çš„åŒºåŸŸçŸ©å½¢åæ ‡ä¼ å…¥
+		// ÈôÑ¡Ôñ·ÖÏíÄ³¸öÇøÓò£¬Ôò½«µ±Ç°ÉèÖÃµÄÇøÓò¾ØĞÎ×ø±ê´«Èë
 		QRect rect = m_settings->currentRectangle();
 		zego_screencapture_set_target_rect(0,rect.x(), rect.y(), rect.width(), rect.height());
 		zego_screencapture_set_target_rect(0, 0, 0, 2880, 1800);
@@ -364,7 +298,7 @@ void ZegoScreenCaptureController::onUiScreenRefreshRequested(void)
 {
 	qDebug() << "onUiScreenRefreshRequested";
 
-	// åˆ·æ–°å±å¹•åˆ—è¡¨ï¼ŒEnumScreenListå¾—åˆ°åˆ—è¡¨æ•°æ®åæ·±æ‹·è´å¸¦èµ°ï¼ŒFreeScreenListä¸ä¹‹é…å¯¹
+	// Ë¢ĞÂÆÁÄ»ÁĞ±í£¬EnumScreenListµÃµ½ÁĞ±íÊı¾İºóÉî¿½±´´ø×ß£¬FreeScreenListÓëÖ®Åä¶Ô
 	unsigned int count(0);
 	const struct ZegoScreenCaptureScreenItem* itemList(nullptr);
 	itemList = zego_screencapture_enum_screen_list(&count);
@@ -390,7 +324,7 @@ void ZegoScreenCaptureController::onUiScreenSelectChanged(const QString& name)
 
 	if (m_settings->currentTarget() == ZegoScreenCaptureSettings::Screen)
 	{
-		// è¦åˆ†äº«çš„å±å¹•å‘ç”Ÿå˜åŒ–
+		// Òª·ÖÏíµÄÆÁÄ»·¢Éú±ä»¯
 		zego_screencapture_set_target_screen(/*name.toUtf8().data()*/0);
 	}
 }
@@ -399,7 +333,7 @@ void ZegoScreenCaptureController::onUiWindowRefreshRequested(void)
 {
 	qDebug() << "onUiWindowRefreshRequested";
 
-	// åˆ·æ–°çª—å£åˆ—è¡¨ï¼ŒEnumWindowListå¾—åˆ°åˆ—è¡¨æ•°æ®åæ·±æ‹·è´å¸¦èµ°ï¼ŒFreeWindowListä¸ä¹‹é…å¯¹
+	// Ë¢ĞÂ´°¿ÚÁĞ±í£¬EnumWindowListµÃµ½ÁĞ±íÊı¾İºóÉî¿½±´´ø×ß£¬FreeWindowListÓëÖ®Åä¶Ô
 	unsigned int count(0);
 	const struct ZegoScreenCaptureWindowItem* itemList(nullptr);
 	itemList = zego_screencapture_enum_window_list(true, &count);
@@ -425,7 +359,7 @@ void ZegoScreenCaptureController::onUiWindowSelectChanged(qint64 id)
 
 	if (m_settings->currentTarget() == ZegoScreenCaptureSettings::Window)
 	{
-		// åˆ†äº«çš„çª—å£å‘ç”Ÿå˜åŒ–
+		// ·ÖÏíµÄ´°¿Ú·¢Éú±ä»¯
 		zego_screencapture_set_target_window_mode((ZegoScreenCaptureWindowMode)m_settings->getWinwowMode());
 		zego_screencapture_set_target_window((void*)id);
 	}
@@ -437,7 +371,7 @@ void ZegoScreenCaptureController::onUiRectangleChanged(QRect geometry)
 
 	if (m_settings->currentTarget() == ZegoScreenCaptureSettings::Rectangle)
 	{
-		// æ¡Œé¢åˆ†äº«åŒºåŸŸå‘ç”Ÿå˜åŒ–
+		// ×ÀÃæ·ÖÏíÇøÓò·¢Éú±ä»¯
 		zego_screencapture_set_target_rect(0,geometry.x(), geometry.y(), geometry.width(), geometry.height());
 	}
 }
@@ -446,9 +380,12 @@ void ZegoScreenCaptureController::onUiResolutionSelectChanged(QSize resolution)
 {
 	qDebug() << "onUiResolutionSelectChanged " << resolution;
 
-	// è®¾ç½®æ¨æµç¼–ç åˆ†è¾¨ç‡ï¼Œå³æ‹‰æµç«¯çœ‹åˆ°çš„ç”»é¢åˆ†è¾¨ç‡ã€‚
-	// ç›´æ’­è¿‡ç¨‹ä¸­è¯¥åˆ†è¾¨ç‡æœ€å¥½ä¸è¦å‘ç”Ÿå˜åŒ–ï¼Œå¦åˆ™å¯èƒ½å½±å“æœåŠ¡å™¨çš„å½•åˆ¶
+	// ÉèÖÃÍÆÁ÷±àÂë·Ö±æÂÊ£¬¼´À­Á÷¶Ë¿´µ½µÄ»­Ãæ·Ö±æÂÊ¡£
+	// Ö±²¥¹ı³ÌÖĞ¸Ã·Ö±æÂÊ×îºÃ²»Òª·¢Éú±ä»¯£¬·ñÔò¿ÉÄÜÓ°Ïì·şÎñÆ÷µÄÂ¼ÖÆ
 	auto engine = ZegoExpressSDK::getEngine();
+
+	if (engine == nullptr) return;
+
 	ZegoVideoConfig tempvideoconfig = engine->getVideoConfig();
 // 	tempvideoconfig.captureWidth = resolution.width();
 // 	tempvideoconfig.captureHeight = resolution.height();
@@ -462,9 +399,11 @@ void ZegoScreenCaptureController::onUiBitrateChanged(int bitrate)
 {
 	qDebug() << "onUiBitrateChanged " << bitrate;
 
-	// è®¾ç½®æ¨æµç ç‡
+	// ÉèÖÃÍÆÁ÷ÂëÂÊ
 	//ZEGO::LIVEROOM::SetVideoBitrate(bitrate);
 	auto engine = ZegoExpressSDK::getEngine();
+	if (engine == nullptr) return;
+
 	ZegoVideoConfig m_videoconfig = engine->getVideoConfig();
 	m_videoconfig.bitrate = bitrate / 1024;
 
@@ -475,25 +414,27 @@ void ZegoScreenCaptureController::onUiFramerateChanged(int framerate)
 {
 	qDebug() << "onUiFramerateChanged " << framerate;
 
-	// è®¾ç½®æ¡Œé¢åˆ†äº«çš„é‡‡é›†å¸§ç‡ï¼Œå³OnCapturedFrameAvailableæ¯ç§’å›è°ƒæ¬¡æ•°
+	// ÉèÖÃ×ÀÃæ·ÖÏíµÄ²É¼¯Ö¡ÂÊ£¬¼´OnCapturedFrameAvailableÃ¿Ãë»Øµ÷´ÎÊı
 	zego_screencapture_set_fps(30);
 
 	auto engine = ZegoExpressSDK::getEngine();
+	if (engine == nullptr) return;
+
 	ZEGO::EXPRESS::ZegoVideoConfig m_videoconfig = engine->getVideoConfig();
 	m_videoconfig.fps = framerate;
 	engine->setVideoConfig(m_videoconfig);
 
-	// åŒæ—¶è®¾ç½®æ¨æµå¸§ç‡
+	// Í¬Ê±ÉèÖÃÍÆÁ÷Ö¡ÂÊ
 	//ZEGO::LIVEROOM::SetVideoFPS(framerate);
 
-	// å‰è€…æ˜¯è¾“å…¥å¸§ç‡ï¼Œåè€…æ˜¯è¾“å‡ºå¸§ç‡
+	// Ç°ÕßÊÇÊäÈëÖ¡ÂÊ£¬ºóÕßÊÇÊä³öÖ¡ÂÊ
 }
 
 void ZegoScreenCaptureController::onUiCursorToggled(bool checked)
 {
 	qDebug() << "onUiCursorToggled " << checked;
 
-	// è®¾ç½®æ˜¯å¦åŒæ—¶æ•æ‰å…‰æ ‡
+	// ÉèÖÃÊÇ·ñÍ¬Ê±²¶×½¹â±ê
 	zego_screencapture_set_cursor_visible(checked);
 }
 
@@ -501,7 +442,7 @@ void ZegoScreenCaptureController::onUiClickAnimationToggled(bool checked)
 {
 	qDebug() << "onUiClickAnimationToggled " << checked;
 
-	// è®¾ç½®æ˜¯å¦åœ¨æ•æ‰åˆ°åˆ†äº«ç”»é¢çš„åŒæ—¶æ˜¾ç¤ºç‚¹å‡»åŠ¨ç”»
+	// ÉèÖÃÊÇ·ñÔÚ²¶×½µ½·ÖÏí»­ÃæµÄÍ¬Ê±ÏÔÊ¾µã»÷¶¯»­
 	zego_screencapture_enable_click_animation(checked);
 }
 
@@ -512,7 +453,7 @@ void ZegoScreenCaptureController::onUiCaptureRequested(int curState)
 	
 	if (curState == ZegoScreenCaptureSettings::CaptureIdle)
 	{
-		// å¦‚æœå½“å‰æœªå¼€å§‹æ•æ‰æ¡Œé¢ï¼Œå¯åŠ¨ä¹‹
+		// Èç¹ûµ±Ç°Î´¿ªÊ¼²¶×½×ÀÃæ£¬Æô¶¯Ö®
 
 		zego_screencapture_start_capture();
 		zego_screencapture_set_target_window_mode((ZegoScreenCaptureWindowMode)m_settings->getWinwowMode());
@@ -521,7 +462,7 @@ void ZegoScreenCaptureController::onUiCaptureRequested(int curState)
 	}
 	else if (curState == ZegoScreenCaptureSettings::CaptureWorking)
 	{
-		// å¦‚æœå½“å‰æ­£åœ¨æ•æ‰æ¡Œé¢ç”»é¢ï¼Œåœæ­¢
+		// Èç¹ûµ±Ç°ÕıÔÚ²¶×½×ÀÃæ»­Ãæ£¬Í£Ö¹
 		zego_screencapture_stop_capture();
 		m_settings->updateCaptureState(ZegoScreenCaptureSettings::CaptureIdle);
 	}
@@ -531,29 +472,29 @@ void ZegoScreenCaptureController::onUiPublishRequested(int curState)
 {
 	qDebug() << "onUiPublishRequested " << curState;
 
-	//è·å–engine
+	//»ñÈ¡engine
 	auto engine = ZegoExpressSDK::getEngine();
-	Q_ASSERT(engine != nullptr);
+	if (engine == nullptr) return;
 
 	if (curState == ZegoScreenCaptureSettings::UnPublish)
 	{
-		// åœ¨å¼€å§‹æ¨æµå‰å¼€å§‹ï¼Œå…ˆå¯åŠ¨æ•æ‰æ¡Œé¢
+		// ÔÚ¿ªÊ¼ÍÆÁ÷Ç°¿ªÊ¼£¬ÏÈÆô¶¯²¶×½×ÀÃæ
 		if (m_settings->currentCaptureState() == ZegoScreenCaptureSettings::CaptureIdle)
 		{
 			onUiCaptureRequested(ZegoScreenCaptureSettings::CaptureIdle);
 		}
 
-		//å¯åŠ¨æ¨æµ
+		//Æô¶¯ÍÆÁ÷
 		engine->startPublishingStream(m_userId.toStdString(),ZEGO::EXPRESS::ZegoPublishChannel::ZEGO_PUBLISH_CHANNEL_MAIN);
 
-		//æ›´æ–°æ¨æµçŠ¶æ€
+		//¸üĞÂÍÆÁ÷×´Ì¬
 		m_settings->updatePublishState(ZegoScreenCaptureSettings::PublishConnecting);
 
 	}
 	else if (curState == ZegoScreenCaptureSettings::PublishConnecting ||
 		curState == ZegoScreenCaptureSettings::Publishing)
 	{
-		// åœæ­¢æ¨æµï¼Œé©¬ä¸Šå¯ä»¥åœæ­¢
+		// Í£Ö¹ÍÆÁ÷£¬ÂíÉÏ¿ÉÒÔÍ£Ö¹
 
 		engine->stopPublishingStream();
 
@@ -580,18 +521,19 @@ void ZegoScreenCaptureController::OnUiThumbnailWindowCapture(qint64 id)
 	zego_screencapture_set_target_window_mode((ZegoScreenCaptureWindowMode)m_settings->getWinwowMode());
 	zego_screencapture_set_target_window((void*)id);
 
-	// åœ¨å¼€å§‹æ¨æµå‰å¼€å§‹ï¼Œå…ˆå¯åŠ¨æ•æ‰æ¡Œé¢
+	// ÔÚ¿ªÊ¼ÍÆÁ÷Ç°¿ªÊ¼£¬ÏÈÆô¶¯²¶×½×ÀÃæ
 	if (m_settings->currentCaptureState() == ZegoScreenCaptureSettings::CaptureIdle)
 	{
 		onUiCaptureRequested(ZegoScreenCaptureSettings::CaptureIdle);
 	}
 
-	//è·å–engine
+	//»ñÈ¡engine
 	auto engine = ZegoExpressSDK::getEngine();
-	Q_ASSERT(engine != nullptr);
-	//å¯åŠ¨æ¨æµ
+	if (engine == nullptr) return;
+
+	//Æô¶¯ÍÆÁ÷
 	engine->startPublishingStream(m_userId.toStdString());
-	//æ›´æ–°æ¨æµçŠ¶æ€
+	//¸üĞÂÍÆÁ÷×´Ì¬
 	m_settings->updatePublishState(ZegoScreenCaptureSettings::PublishConnecting);
 }
 
@@ -602,7 +544,7 @@ void ZegoScreenCaptureController::onUiPlayStreamRequested(int curState)
 	{
 		if (curState == ZegoScreenCaptureSettings::PlayState::UnPlay)
 		{
-			//æˆåŠŸè·å–å¼•æ“ï¼Œé‚£ä¹ˆå¼€å§‹æ‹‰æµ
+			//³É¹¦»ñÈ¡ÒıÇæ£¬ÄÇÃ´¿ªÊ¼À­Á÷
 			//QVideoWidget video_play;
 			ZegoCanvas zegocanvas = (ZegoView*)(m_CaptureView->winId());
 			engine->startPlayingStream(m_userId.toStdString(), &zegocanvas);
@@ -611,7 +553,7 @@ void ZegoScreenCaptureController::onUiPlayStreamRequested(int curState)
 		}
 		else if ((curState == ZegoScreenCaptureSettings::PlayConnecting) || (ZegoScreenCaptureSettings::Playing))
 		{
-			//åœæ­¢æ‹‰æµ
+			//Í£Ö¹À­Á÷
 			engine->stopPlayingStream(m_userId.toStdString());
 			m_settings->updatePlayState(ZegoScreenCaptureSettings::UnPlay);
 		}

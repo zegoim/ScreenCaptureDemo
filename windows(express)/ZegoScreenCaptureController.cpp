@@ -7,7 +7,7 @@
 
 //ZegoExpressSDK  2021/1/12  longjuncai添加
 #include "ZegoExpressSDK.h"
-#include "ZegoInternalEngineImpl.hpp"
+#include "ZegoExpressInterface.h"
 #include "CustomVideoCapture.h"
 using namespace ZEGO::EXPRESS;
 
@@ -16,11 +16,9 @@ using namespace ZEGO::EXPRESS;
 #include <QImage>
 #include <QPixmap>
 
-//启动Express SDK的Appid和Signkey->可用于RTC服务器
+// 向 Zego 控制台申请的 appid 和 appsign
 unsigned int g_rtmp_appid = /*appID*/;
-
-//适配Express方式
-static char* g_rtmp_signkey = /*appsign*/;
+static const char* g_rtmp_signkey = /*appsign*/;
 
 ZegoScreenCaptureController::ZegoScreenCaptureController(QObject *parent)
 	: QObject(parent), m_settings(new ZegoScreenCaptureSettings(this))
@@ -34,11 +32,24 @@ ZegoScreenCaptureController::ZegoScreenCaptureController(QObject *parent)
 		this, &ZegoScreenCaptureController::onCaptureStateChanged_p, Qt::QueuedConnection);
 	connect(this, &ZegoScreenCaptureController::publishStateChanged_p, 
 		this, &ZegoScreenCaptureController::onPublishStateChanged_p, Qt::QueuedConnection);
+
+	// event handle
+	connect(eventHandler.get(), &ZegoEventHandler::publishStateChanged_p, this, &ZegoScreenCaptureController::onPublishStateChanged_p, Qt::QueuedConnection);
+	// write log
+	connect(eventHandler.get(), &ZegoEventHandler::WriteLog_p, m_settings, &ZegoScreenCaptureSettings::WriteLog, Qt::QueuedConnection);
+	// other
+	connect(eventHandler.get(), &ZegoEventHandler::updatePlayState_p, m_settings, &ZegoScreenCaptureSettings::UpdateState, Qt::QueuedConnection);
+	connect(eventHandler.get(), &ZegoEventHandler::setPublishStreamUrl_p, m_settings, &ZegoScreenCaptureSettings::SetPublishUrl, Qt::QueuedConnection);
 }
 
 ZegoScreenCaptureController::~ZegoScreenCaptureController()
 {
-	uninit();
+	static bool isUninited = false;
+	if(!isUninited)
+	{ 
+		isUninited = true;
+		uninit();
+	}
 }
 
 void ZegoScreenCaptureController::init(void)
@@ -62,7 +73,11 @@ void ZegoScreenCaptureController::initExpress(void)
 	ZegoExpressSDK::setEngineConfig(config);
 
 	//创建引擎
-	auto engine  = ZegoExpressSDK::createEngine(g_rtmp_appid, g_rtmp_signkey, true, ZEGO_SCENARIO_GENERAL, nullptr);
+	ZegoEngineProfile profile;
+	profile.appID = g_rtmp_appid;
+	profile.appSign = g_rtmp_signkey;
+	profile.scenario = ZEGO_SCENARIO_GENERAL;
+	auto engine  = ZegoExpressSDK::createEngine(profile, nullptr);
 	Q_ASSERT(engine != nullptr);
 
 	//设置自定义视频采集对象
@@ -75,7 +90,8 @@ void ZegoScreenCaptureController::initExpress(void)
 	engine->setCustomVideoCaptureHandler(mCustomVideoCapture);
 
 	//设置事件回调-用以通知推流执行状态
-	eventHandler = std::shared_ptr<IZegoEventHandler> (this);
+	//eventHandler = std::shared_ptr<IZegoEventHandler> (this);
+	eventHandler = std::make_shared<ZegoEventHandler>();
 	
 	engine->setEventHandler(eventHandler);
 
@@ -156,50 +172,14 @@ void ZegoScreenCaptureController::uninit(void)
 		//获取单例engine
 		auto engine = ZegoExpressSDK::getEngine();
 		if (engine) {
-			engine->logoutRoom(m_userId.toStdString());
+			eventHandler = nullptr;
+			engine->setEventHandler(nullptr);
 			engine->enableCustomVideoCapture(false, nullptr);
 			engine->setCustomVideoCaptureHandler(nullptr);
+			engine->logoutRoom(m_userId.toStdString());
 			ZegoExpressSDK::destroyEngine(engine);
 		}
 	}
-}
-
-//----重写
-void ZegoScreenCaptureController::onPublisherStateUpdate(const std::string& streamID, ZEGO::EXPRESS::ZegoPublisherState state, int errorCode, const std::string& extendedData)
-{
-	QString desc = QStringLiteral("## 流状态变更 > %1 ##").arg(state);
-	m_settings->appendLogString(desc);
-
-	//如果此时推流成功，那么扩展数据会包含RTMP和hls的地址，打印显示出来
-	if (!extendedData.empty() && (extendedData != "{}"))
-	{
-		std::string strRtmpUrl = "rtmp_url_list";
-		std::string strHlsUrl = "hls_url_list";
-
-		//rtmp
-		uint iPos1 = extendedData.find(strRtmpUrl);
-		uint iPos2 = extendedData.find("[",iPos1+1);
-		uint iPos3 = extendedData.find("]", iPos2+1);
-		if (iPos3 - iPos2 - 3 > 0)
-		{
-			strRtmpUrl = extendedData.substr(iPos2 + 2, iPos3 - iPos2 - 3);
-		}
-
-		//hls
-		iPos1 = extendedData.find(strHlsUrl,iPos3);
-		iPos2 = extendedData.find("[", iPos3 + 1);
-		iPos3 = extendedData.find("]", iPos2 + 1);
-		if (iPos3 - iPos2 - 3 > 0)
-		{
-			strHlsUrl = extendedData.substr(iPos2 + 2, iPos3 - iPos2 - 3);
-		}
-
-		m_settings->setPublishStreamUrl(QString(strRtmpUrl.c_str()), QString(strHlsUrl.c_str()));
-		
-	}
-	
-	// 回调更新界面要切换线程
-	emit publishStateChanged_p((int)state);
 }
 
 void ZegoScreenCaptureController::onPublishStateChanged_p(int state)
@@ -207,47 +187,6 @@ void ZegoScreenCaptureController::onPublishStateChanged_p(int state)
 	m_settings->updatePublishState(state == 2 ?
 		ZegoScreenCaptureSettings::Publishing : ZegoScreenCaptureSettings::UnPublish);
 
-}
-
-//----重写
-void ZegoScreenCaptureController::onPublisherQualityUpdate(const std::string& streamID, const ZEGO::EXPRESS::ZegoPublishStreamQuality& quality)
-{
-	if (streamID.empty())
-		return;
-
-	// 推流质量实时统计
-	QString desc = QStringLiteral("#### 实时统计 [%1] 质量: %2 帧率: %3 码率: %4 ####")
-		.arg(QString(streamID.c_str())).arg(quality.level).arg(quality.videoSendFPS).arg(quality.videoKBPS);
-	m_settings->appendLogString(desc);
-}
-
-//重写ZegoEvent的拉流监听
-void ZegoScreenCaptureController::onPlayerStateUpdate(const std::string& streamID, ZegoPlayerState state, int errorCode, const std::string& extendedData)
-{
-	ZegoScreenCaptureSettings::PlayState mystate;
-	//更新按钮状态，监听拉流状态
-	switch (state)
-	{
-	case ZEGO::EXPRESS::ZEGO_PLAYER_STATE_NO_PLAY:
-		mystate = ZegoScreenCaptureSettings::UnPlay;
-		break;
-	case ZEGO::EXPRESS::ZEGO_PLAYER_STATE_PLAY_REQUESTING:
-		mystate = ZegoScreenCaptureSettings::PlayConnecting;
-		break;
-	case ZEGO::EXPRESS::ZEGO_PLAYER_STATE_PLAYING:
-		mystate = ZegoScreenCaptureSettings::Playing;
-		break;
-	default:
-		break;
-	}
-	m_settings->updatePlayState(mystate);
-	//拉流成功，那么打印成功提示信息
-	if (mystate == ZegoScreenCaptureSettings::Playing)
-	{
-		qDebug() << QString("PlayStream Successful!");
-	}
-	//输出扩展数据
-	qDebug() << QString(extendedData.c_str());
 }
 
 void ZegoScreenCaptureController::OnCapturedFrameAvailable(const char *data, uint32_t length, const struct ZegoScreenCaptureVideoCaptureFormat *video_frame_format, uint64_t reference_time, uint32_t reference_time_scale, void *user_data)
@@ -276,10 +215,11 @@ void ZegoScreenCaptureController::OnCapturedFrameAvailable(const char *data, uin
 
 		videoFrame->referenceTimeMillsecond = reference_time;
 
+		auto engine = ZegoExpressSDK::getEngine();
 		//将数据压入Express SDK引擎
-		if (videoFrame)
+		if (engine && videoFrame)
 		{
-			ZegoExpressSDK::getEngine()->sendCustomVideoCaptureRawData(videoFrame->data.get(), videoFrame->dataLength, videoFrame->param, videoFrame->referenceTimeMillsecond, ZEGO::EXPRESS::ZEGO_PUBLISH_CHANNEL_MAIN);
+			engine->sendCustomVideoCaptureRawData(videoFrame->data.get(), videoFrame->dataLength, videoFrame->param, videoFrame->referenceTimeMillsecond, ZEGO::EXPRESS::ZEGO_PUBLISH_CHANNEL_MAIN);
 		}
 
 		//std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -448,6 +388,8 @@ void ZegoScreenCaptureController::onUiResolutionSelectChanged(QSize resolution)
 	// 设置推流编码分辨率，即拉流端看到的画面分辨率。
 	// 直播过程中该分辨率最好不要发生变化，否则可能影响服务器的录制
 	auto engine = ZegoExpressSDK::getEngine();
+
+	if (engine == nullptr) return;
 	ZegoVideoConfig tempvideoconfig = engine->getVideoConfig();
 // 	tempvideoconfig.captureWidth = resolution.width();
 // 	tempvideoconfig.captureHeight = resolution.height();
@@ -464,6 +406,7 @@ void ZegoScreenCaptureController::onUiBitrateChanged(int bitrate)
 	// 设置推流码率
 	//ZEGO::LIVEROOM::SetVideoBitrate(bitrate);
 	auto engine = ZegoExpressSDK::getEngine();
+	if (engine == nullptr) return;
 	ZegoVideoConfig m_videoconfig = engine->getVideoConfig();
 	m_videoconfig.bitrate = bitrate / 1024;
 
@@ -478,6 +421,7 @@ void ZegoScreenCaptureController::onUiFramerateChanged(int framerate)
 	zego_screencapture_set_fps(30);
 
 	auto engine = ZegoExpressSDK::getEngine();
+	if (engine == nullptr) return;
 	ZEGO::EXPRESS::ZegoVideoConfig m_videoconfig = engine->getVideoConfig();
 	m_videoconfig.fps = framerate;
 	engine->setVideoConfig(m_videoconfig);
@@ -532,7 +476,7 @@ void ZegoScreenCaptureController::onUiPublishRequested(int curState)
 
 	//获取engine
 	auto engine = ZegoExpressSDK::getEngine();
-	Q_ASSERT(engine != nullptr);
+	if (engine == nullptr) return;
 
 	if (curState == ZegoScreenCaptureSettings::UnPublish)
 	{
@@ -587,7 +531,7 @@ void ZegoScreenCaptureController::OnUiThumbnailWindowCapture(qint64 id)
 
 	//获取engine
 	auto engine = ZegoExpressSDK::getEngine();
-	Q_ASSERT(engine != nullptr);
+	if (engine == nullptr) return;
 	//启动推流
 	engine->startPublishingStream(m_userId.toStdString());
 	//更新推流状态

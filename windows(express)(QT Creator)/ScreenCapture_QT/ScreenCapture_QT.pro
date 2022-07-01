@@ -33,34 +33,34 @@ SOURCES += \
 
 win32:CONFIG(release, debug|release) {
     contains(DEFINES, WIN64) {
-        LIBS += -L$$PWD/../ZegoExpress/lib/x64/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoExpress/x64/ -lZegoExpressEngine
         LIBS += -L$$PWD/../ZegoScreenCapture/libs/x64/ -lZegoScreenCapture
-        DEPENDPATH += $$PWD/../ZegoExpress/lib/x64
+        DEPENDPATH += $$PWD/../ZegoExpress/x64
         DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x64
 
     } else {
-        LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoExpress/x86/ -lZegoExpressEngine
         LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
-        DEPENDPATH += $$PWD/../ZegoExpress/lib/x86
+        DEPENDPATH += $$PWD/../ZegoExpress/x86
         DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x86
     }
 } else {
     contains(DEFINES, WIN64) {
-        LIBS += -L$$PWD/../ZegoExpress/lib/x64/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoExpress/x64/ -lZegoExpressEngine
         LIBS += -L$$PWD/../ZegoScreenCapture/libs/x64/ -lZegoScreenCapture
-        DEPENDPATH += $$PWD/../ZegoExpress/lib/x64
+        DEPENDPATH += $$PWD/../ZegoExpress/x64
         DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x64
 
     } else {
-        LIBS += -L$$PWD/../ZegoExpress/lib/x86/ -lZegoExpressEngine
+        LIBS += -L$$PWD/../ZegoExpress/x86/ -lZegoExpressEngine
         LIBS += -L$$PWD/../ZegoScreenCapture/libs/x86/ -lZegoScreenCapture
-        DEPENDPATH += $$PWD/../ZegoExpress/lib/x86
+        DEPENDPATH += $$PWD/../ZegoExpress/x86
         DEPENDPATH += $$PWD/../ZegoScreenCapture/libs/x86
     }
 }
 
-INCLUDEPATH += $$PWD/../ZegoExpress/include
-INCLUDEPATH += $$PWD/../ZegoExpress/include/internal
+INCLUDEPATH += $$PWD/../ZegoExpress/x86/include
+INCLUDEPATH += $$PWD/../ZegoExpress/x86/include/internal
 INCLUDEPATH += $$PWD/../ZegoScreenCapture/include
 
 

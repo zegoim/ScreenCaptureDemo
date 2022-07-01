@@ -17,8 +17,6 @@ void ZegoCaptureView::SetCaptureImage(const QPixmap& pixmap)
 {
 	//m_pixmap = pixmap;
 	//update();
-	HWND h = (HWND)winId();
-	int n = 0;
 }
 
 //void ZegoCaptureView::paintEvent(QPaintEvent *p)

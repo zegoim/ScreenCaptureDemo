@@ -13,14 +13,8 @@
 #include <QDebug>
 
 
-static unsigned int g_rtmp_appid = 1;
-static unsigned char g_rtmp_signkey[] =
-{
-	0x91, 0x93, 0xcc, 0x66, 0x2a, 0x1c, 0x0e, 0xc1,
-	0x35, 0xec, 0x71, 0xfb, 0x07, 0x19, 0x4b, 0x38,
-	0x41, 0xd4, 0xad, 0x83, 0x78, 0xf2, 0x59, 0x90,
-	0xe0, 0xa4, 0x0c, 0x7f, 0xf4, 0x28, 0x41, 0xf7
-};
+static unsigned int g_rtmp_appid = /*appid*/;
+static unsigned char g_rtmp_signkey[] = /*appsign*/;
 
 
 ZegoScreenCaptureController::ZegoScreenCaptureController(QObject *parent)
@@ -57,7 +51,6 @@ void ZegoScreenCaptureController::initAV(void)
 	m_externalCaptureFactory = new ZegoExternalCaptureFactory(this);
 	ZEGO::LIVEROOM::SetVideoCaptureFactory(m_externalCaptureFactory);
 	bRet = ZEGO::LIVEROOM::SetLogDir(logDir);
-	ZEGO::LIVEROOM::SetUseTestEnv(true);
 	bRet = ZEGO::LIVEROOM::InitSDK(g_rtmp_appid, g_rtmp_signkey, 32);
 	bRet = ZEGO::LIVEROOM::SetLivePublisherCallback(this);
 	bRet = ZEGO::LIVEROOM::SetUser(m_userId.toUtf8(), m_userId.toUtf8());
@@ -122,6 +115,7 @@ void ZegoScreenCaptureController::bindSettings(void)
 void ZegoScreenCaptureController::uninit(void)
 {
 	zego_screencapture_uninit();
+	ZEGO::LIVEROOM::StopPublishing();
 	ZEGO::LIVEROOM::LogoutRoom();
 	ZEGO::LIVEROOM::UnInitSDK();
 }

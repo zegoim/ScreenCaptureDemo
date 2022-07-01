@@ -33,7 +33,13 @@ namespace ZegoScreenCapture_.net_
         public static extern void zego_express_set_engine_config(zego_engine_config config);
 
         [DllImport("ZegoExpressEngine.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int zego_express_engine_init(uint app_id, string app_sign, bool is_test_env, zego_scenario scenario);
+        public static extern void zego_express_set_log_config(zego_log_config config);
+
+        //[DllImport("ZegoExpressEngine.dll", CallingConvention = CallingConvention.Cdecl)]
+        //public static extern int zego_express_engine_init(uint app_id, string app_sign, bool is_test_env, zego_scenario scenario);
+
+        [DllImport("ZegoExpressEngine.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int zego_express_engine_init_with_profile(zego_engine_profile profile);
 
         [DllImport("ZegoExpressEngine.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void zego_express_engine_uninit_async();

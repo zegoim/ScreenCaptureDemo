@@ -7,13 +7,12 @@
 #include "ZegoExpressEventHandler.h"
 #include "CustomVideoCapture.h"
 #include "ZegoCaptureView.h"
+#include "ZegoEventHandler.h"
 
 class ZegoScreenCaptureSettings;
 class ZegoExternalCaptureFactory;
 
-class ZegoScreenCaptureController :
-	public QObject,
-	public ZEGO::EXPRESS::IZegoEventHandler
+class ZegoScreenCaptureController : public QObject
 {
 	Q_OBJECT
 
@@ -27,13 +26,6 @@ public:
 protected:
 	void init(void);
 	void uninit(void);
-
-	//longjuncai重写IZegoEventHandler的推流状态消息回调函数->onPublisherStateUpdate
-	void onPublisherStateUpdate(const std::string& streamID, ZEGO::EXPRESS::ZegoPublisherState state, int errorCode, const std::string& extendedData);
-	//longjuncai重写IZegoEventHandler的质量消息回调函数->onPublisherQualityUpdate
-	void onPublisherQualityUpdate(const std::string& streamID, const ZEGO::EXPRESS::ZegoPublishStreamQuality& quality);
-
-	void onPlayerStateUpdate(const std::string& streamID, ZegoPlayerState state, int errorCode, const std::string& extendedData);
 
 	// screen capture callback
 	static void OnCaptureError(enum ZegoScreenCaptureCaptureError error, void *user_data);
@@ -77,5 +69,5 @@ private:
 	//SDK推流启动回调
 	std::shared_ptr<CustomVideoCapturer> mCustomVideoCapture;
 	//SDK状态等信息回调
-	std::shared_ptr<IZegoEventHandler> eventHandler;  
+	std::shared_ptr<ZegoEventHandler> eventHandler;
 };
